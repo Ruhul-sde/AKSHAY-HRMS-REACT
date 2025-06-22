@@ -189,4 +189,36 @@ router.post('/apply-loan', async (req, res) => {
   }
 });
 
+// ---------------- GET ATTENDANCE ----------------
+router.get('/attendance', async (req, res) => {
+  const { EMPCode, Month } = req.query;
+
+  if (!EMPCode || !Month) {
+    return res.status(400).json({ success: false, message: "EMPCode and Month are required." });
+  }
+
+  const apiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetAttendanceRpt?Month=${Month}&EMPCode=${EMPCode}`;
+
+  try {
+    const response = await axios.get(apiUrl);
+
+    const result = response.data?.GetAttendanceRptResult || {};
+    const attendanceList = result.lst_ClsAttndncRptDtls || [];
+
+    return res.json({
+      success: true,
+      data: attendanceList
+    });
+
+  } catch (error) {
+    console.error("Error fetching attendance:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch attendance data",
+      error: error.message
+    });
+  }
+});
+
+
 module.exports = router;

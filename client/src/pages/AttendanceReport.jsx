@@ -1,122 +1,108 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import { motion } from 'framer-motion';
+import dayjs from 'dayjs';
 
-const AttendanceReport = ({ empCode }) => {
-  const [month, setMonth] = useState('');
-  const [data, setData] = useState([]);
+const AttendanceReport = ({ userData }) => {
+  const [month, setMonth] = useState(dayjs().format('MM-YYYY'));
+  const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Set current month in yyyy-mm format on initial render
-  useEffect(() => {
-    const now = new Date();
-    const formattedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    setMonth(formattedMonth);
-  }, []);
-
-  const fetchAttendanceData = async () => {
-    if (!empCode || !month) {
-      setError('Missing Employee Code or Month.');
-      return;
+  const fetchAttendance = async () => {
+    if (!month) {
+      return setError("Month is required.");
     }
 
-    setLoading(true);
-    setError('');
-
     try {
-      const response = await axios.get(
-        'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetAttendanceRpt',
-        {
-          params: {
-            Month: month,
-            EMPCode: empCode,
-          },
-        }
-      );
-
-      console.log("📦 API Raw Response:", response.data);
-
-      const errorStatus = response.data?.l_ClsErrorStatus;
-      const reportData = response.data?.lst_ClsAttndncRptDtls;
-
-      if (!errorStatus || errorStatus.ErrorCode !== '0') {
-        const message = errorStatus?.ErrorMessage || 'Unknown error from API';
-        throw new Error(`API Error: ${message}`);
-      }
-
-      setData(reportData || []);
+      setLoading(true);
+      setError('');
+      const res = await axios.get(`/api/attendance?EMPCode=${userData.ls_EMPCODE}&Month=${month}`);
+      setAttendanceData(res.data.data || []);
     } catch (err) {
-      console.error('❌ Error fetching data:', err);
-      setError(err.message || 'Something went wrong.');
+      setError("Failed to fetch attendance report.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (month && empCode) {
-      fetchAttendanceData();
-    }
-  }, [month, empCode]);
-
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Attendance Report</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white px-4 py-10">
+      <motion.div
+        className="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h2 className="text-2xl font-bold text-indigo-600 mb-4 text-center">Attendance Report</h2>
 
-      <div className="mb-4 flex gap-4 items-center">
-        <label htmlFor="month" className="font-medium">
-          Select Month:
-        </label>
-        <input
-          type="month"
-          id="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <button
-          onClick={fetchAttendanceData}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Refresh
-        </button>
-      </div>
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+          <div className="w-full md:w-1/3">
+            <label className="text-sm font-medium text-gray-700">Select Month (MM-YYYY)</label>
+            <input
+              type="text"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              placeholder="e.g. 06-2025"
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+          </div>
 
-      {loading && <p className="text-blue-600">Loading attendance data...</p>}
-      {error && <p className="text-red-600 font-semibold">{error}</p>}
-
-      {!loading && !error && data.length === 0 && (
-        <p className="text-gray-500">No attendance data available.</p>
-      )}
-
-      {!loading && !error && data.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-3 py-2">Date</th>
-                <th className="border px-3 py-2">In Time</th>
-                <th className="border px-3 py-2">Out Time</th>
-                <th className="border px-3 py-2">Total Time</th>
-                <th className="border px-3 py-2">Late Mark</th>
-                <th className="border px-3 py-2">Day Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((record, index) => (
-                <tr key={index} className="text-sm">
-                  <td className="border px-2 py-1">{record.ls_SysInDt?.split('T')[0] || '-'}</td>
-                  <td className="border px-2 py-1">{record.ls_SysInTm || '-'}</td>
-                  <td className="border px-2 py-1">{record.ls_SysOutTm || '-'}</td>
-                  <td className="border px-2 py-1">{record.ls_SysTotTm || '-'}</td>
-                  <td className="border px-2 py-1">{record.ls_LateMark || '-'}</td>
-                  <td className="border px-2 py-1">{record.ls_DayType || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <button
+            onClick={fetchAttendance}
+            className="mt-2 md:mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition"
+          >
+            View Report
+          </button>
         </div>
-      )}
+
+        {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+
+        {loading ? (
+          <p className="text-center text-gray-600">Loading...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto text-sm border border-gray-200">
+              <thead className="bg-indigo-100">
+                <tr>
+                  <th className="px-3 py-2 border">Date</th>
+                  <th className="px-3 py-2 border">Day Type</th>
+                  <th className="px-3 py-2 border">Late Mark</th>
+                  <th className="px-3 py-2 border">Sys In</th>
+                  <th className="px-3 py-2 border">Sys Out</th>
+                  <th className="px-3 py-2 border">Sys Time</th>
+                  <th className="px-3 py-2 border">Manual In</th>
+                  <th className="px-3 py-2 border">Manual Out</th>
+                  <th className="px-3 py-2 border">Manual Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendanceData.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="text-center py-4 text-gray-500">
+                      No data available
+                    </td>
+                  </tr>
+                ) : (
+                  attendanceData.map((item, idx) => (
+                    <tr key={idx} className="text-center hover:bg-gray-50">
+                      <td className="border px-2 py-1">{dayjs(item.ls_SysInDt).format('DD-MM-YYYY')}</td>
+                      <td className="border px-2 py-1">{item.ls_DayType}</td>
+                      <td className="border px-2 py-1">{item.ls_LateMark}</td>
+                      <td className="border px-2 py-1">{item.ls_SysInTm}</td>
+                      <td className="border px-2 py-1">{item.ls_SysOutTm}</td>
+                      <td className="border px-2 py-1">{item.ls_SysTotTm}</td>
+                      <td className="border px-2 py-1">{item.ls_ManInTm}</td>
+                      <td className="border px-2 py-1">{item.ls_ManOutTm}</td>
+                      <td className="border px-2 py-1">{item.ls_ManTotTm}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 };
