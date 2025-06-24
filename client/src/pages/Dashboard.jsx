@@ -79,6 +79,7 @@ const Dashboard = ({ userData, setUserData }) => {
             <div className="grid grid-cols-1 gap-3">
               <ModernAction label="📝 Apply for Leave" onClick={() => navigate('/apply-leave')} />
               <ModernAction label="📜 Leave History" onClick={() => navigate('/leave-history')} />
+              <ModernAction label="📊 Attendance Report" onClick={() => navigate('/attendance-report')} />
               <ModernAction label="🏦 Apply for Loan" onClick={() => navigate('/apply-loan')} />
               <ModernAction label="🔒 Change Password" onClick={() => navigate('/change-password')} />
             </div>

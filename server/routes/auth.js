@@ -119,13 +119,17 @@ router.post('/apply-leave', async (req, res) => {
 
 // ---------------- LEAVE HISTORY ----------------
 router.get('/leave-history', async (req, res) => {
-  const { ls_EmpCode, ls_DocDate } = req.query;
+  const { ls_EmpCode, ls_DocDate, ls_Check, ls_Status } = req.query;
   if (!ls_EmpCode || !ls_DocDate) {
     return res.status(400).json({ success: false, message: "Employee code and date are required" });
   }
 
+  // Set default values if not provided
+  const checked = ls_Check || 'N';
+  const status = ls_Status || 'ALL';
+
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetLeaveHistory?EMPCode=${ls_EmpCode}&Date=${ls_DocDate}`);
+    const { data } = await axios.get(`${BASE_URL}/GetLeaveHistory?EMPCode=${ls_EmpCode}&Date=${ls_DocDate}&Checked=${checked}&Status=${status}`);
     const { l_ClsErrorStatus, lst_ClsLeavHstryDtls = [] } = data;
 
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -137,7 +141,11 @@ router.get('/leave-history', async (req, res) => {
       leaveName: item.ls_LeavName,
       leaveDate: item.ls_LeavDate?.split(' ')[0],
       openLeave: parseFloat(item.ls_OpenLeav) || 0,
-      usedLeave: parseFloat(item.ls_UsedLeav) || 0
+      usedLeave: parseFloat(item.ls_UsedLeav) || 0,
+      status: item.ls_Status || '',
+      fromDate: item.ls_FromDate || '',
+      toDate: item.ls_ToDate || '',
+      reason: item.ls_Reason || ''
     }));
 
     return res.json({ success: true, message: "Leave history fetched successfully", leaveHistory: history });
@@ -168,10 +176,17 @@ router.post('/change-password', async (req, res) => {
 router.get('/loan-types', async (req, res) => {
   try {
     const { data } = await axios.get(`${BASE_URL}/GetLoanTypes`);
+    console.log('Loan Types API Response:', JSON.stringify(data, null, 2));
+    
     const { lst_ClsMstrLoanTypDtls = [] } = data;
+
+    if (!lst_ClsMstrLoanTypDtls || lst_ClsMstrLoanTypDtls.length === 0) {
+      return res.json({ success: false, message: "No loan types available", loanTypes: [] });
+    }
 
     return res.json({ success: true, message: "Loan types fetched successfully", loanTypes: lst_ClsMstrLoanTypDtls });
   } catch (err) {
+    console.error('Loan Types API Error:', err.message);
     return handleApiError(res, err, "Failed to fetch loan types");
   }
 });
@@ -185,45 +200,104 @@ router.post('/apply-loan', async (req, res) => {
     return res.status(400).json({ success: false, message: `Missing fields: ${missing.join(', ')}` });
   }
 
+  // Format the payload to match the API requirements exactly
+  const payload = {
+    ls_EmpCode: req.body.ls_EmpCode.toString(),
+    ls_LoanTyp: req.body.ls_LoanTyp,
+    ls_ReqDate: req.body.ls_ReqDate || dayjs().format('YYYYMMDD'),
+    ls_ReqAmnt: req.body.ls_ReqAmnt.toString(),
+    ls_Intrst: req.body.ls_Intrst || "0",
+    ls_FinlAmnt: req.body.ls_FinlAmnt || "0",
+    ls_NoOfEmi: req.body.ls_NoOfEmi.toString(),
+    ls_EmiAmnt: req.body.ls_EmiAmnt || "0",
+    ls_Reason: req.body.ls_Reason
+  };
+
+  console.log('Backend Loan Payload:', JSON.stringify(payload, null, 2));
+
   try {
-    const { data } = await axios.post(`${BASE_URL}/LoanApply`, req.body, axiosConfig);
-    if (data.ls_Status === "S") {
-      return res.json({ success: true, message: data.ls_Message || "Loan applied successfully", data });
+    const response = await axios.post(`${BASE_URL}/LoanApply`, payload, axiosConfig);
+    console.log('Loan API Response:', JSON.stringify(response.data, null, 2));
+    
+    const { data } = response;
+    
+    // Check if the response indicates success
+    if (data && data.ls_Status === "S") {
+      return res.json({ 
+        success: true, 
+        message: data.ls_Message || "Loan application submitted successfully", 
+        data: data 
+      });
+    } else {
+      // API returned an error status
+      console.error('Loan API Error Response:', data);
+      return res.status(400).json({ 
+        success: false, 
+        message: data?.ls_Message || "Loan application failed - please check your details and try again" 
+      });
     }
-    return res.status(400).json({ success: false, message: data.ls_Message || "Loan application failed" });
   } catch (err) {
+    console.error('Loan Application Error:', err.response?.data || err.message);
+    
+    // If there's a response from the API with error details
+    if (err.response?.data) {
+      return res.status(400).json({
+        success: false,
+        message: err.response.data.ls_Message || err.response.data.message || "Loan application failed",
+        error: err.response.data
+      });
+    }
+    
     return handleApiError(res, err, "Loan application failed");
   }
 });
 
 // ---------------- GET ATTENDANCE ----------------
 router.get('/attendance', async (req, res) => {
-  const { EMPCode, Month } = req.query;
+  const { ls_EmpCode, ls_Month } = req.query;
 
-  if (!EMPCode || !Month) {
+  console.log('Attendance API - Received params:', { ls_EmpCode, ls_Month });
+
+  if (!ls_EmpCode || !ls_Month) {
     return res.status(400).json({ success: false, message: "EMPCode and Month are required." });
   }
 
-  const apiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetAttendanceRpt?Month=${Month}&EMPCode=${EMPCode}`;
-
   try {
-    const response = await axios.get(apiUrl);
+    const { data } = await axios.get(`${BASE_URL}/GetAttendanceRpt?Month=${ls_Month}&EMPCode=${ls_EmpCode}`);
+    const { l_ClsErrorStatus, lst_ClsAttndncRptDtls = [] } = data;
 
-    const result = response.data?.GetAttendanceRptResult || {};
-    const attendanceList = result.lst_ClsAttndncRptDtls || [];
+    if (l_ClsErrorStatus?.ls_Status !== "S") {
+      return res.status(400).json({ 
+        success: false, 
+        message: l_ClsErrorStatus?.ls_Message || "Failed to fetch attendance report" 
+      });
+    }
+
+    const attendanceData = lst_ClsAttndncRptDtls.map(item => ({
+      empCode: item.ls_EmpCode,
+      empName: item.ls_EmpName,
+      dayType: item.ls_DayType,
+      lateMark: item.ls_LateMark,
+      manInDate: item.ls_ManInDt,
+      manInTime: item.ls_ManInTm,
+      manOutDate: item.ls_ManOutDt,
+      manOutTime: item.ls_ManOutTm,
+      manTotalTime: item.ls_ManTotTm,
+      sysInDate: item.ls_SysInDt,
+      sysInTime: item.ls_SysInTm,
+      sysOutDate: item.ls_SysOutDt,
+      sysOutTime: item.ls_SysOutTm,
+      sysTotalTime: item.ls_SysTotTm
+    }));
 
     return res.json({
       success: true,
-      data: attendanceList
+      message: "Attendance report fetched successfully",
+      attendanceData
     });
 
-  } catch (error) {
-    console.error("Error fetching attendance:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch attendance data",
-      error: error.message
-    });
+  } catch (err) {
+    return handleApiError(res, err, "Failed to fetch attendance report");
   }
 });
 

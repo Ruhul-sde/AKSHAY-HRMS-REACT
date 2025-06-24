@@ -32,14 +32,16 @@ const LoanApply = ({ userData }) => {
     const fetchLoanTypes = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/loan-types');
-        if (res.data?.success) {
+        console.log('Loan Types Response:', res.data);
+        
+        if (res.data?.success && res.data.loanTypes?.length > 0) {
           setLoanTypes(res.data.loanTypes);
         } else {
-          setError('No loan types found.');
+          setError(res.data?.message || 'No loan types found.');
         }
       } catch (err) {
         console.error('API Error:', err);
-        setError('Failed to load loan types.');
+        setError('Failed to load loan types. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -62,7 +64,9 @@ const LoanApply = ({ userData }) => {
 
     if (name === 'ls_LoanTyp') {
       const selected = loanTypes.find((lt) => lt.ls_NAME === value);
-      if (selected) updated.ls_Intrst = selected.ls_Intrst;
+      if (selected) {
+        updated.ls_Intrst = selected.ls_Intrst || selected.ls_INTRST || '0';
+      }
     }
 
     if (['ls_ReqAmnt', 'ls_NoOfEmi', 'ls_LoanTyp'].includes(name)) {
@@ -72,15 +76,20 @@ const LoanApply = ({ userData }) => {
       const emiCount = parseInt(
         name === 'ls_NoOfEmi' ? value : formData.ls_NoOfEmi || 0
       );
-      const interest = parseFloat(
-        name === 'ls_LoanTyp'
-          ? loanTypes.find((lt) => lt.ls_NAME === value)?.ls_Intrst || 0
-          : formData.ls_Intrst || 0
-      );
+      
+      let interest = 0;
+      if (name === 'ls_LoanTyp') {
+        const selected = loanTypes.find((lt) => lt.ls_NAME === value);
+        interest = parseFloat(selected?.ls_Intrst || selected?.ls_INTRST || 0);
+      } else {
+        interest = parseFloat(formData.ls_Intrst || 0);
+      }
 
-      const { finalAmount, emi } = calculateEMI(amount, interest, emiCount);
-      updated.ls_FinlAmnt = finalAmount;
-      updated.ls_EmiAmnt = emi;
+      if (amount > 0 && emiCount > 0) {
+        const { finalAmount, emi } = calculateEMI(amount, interest, emiCount);
+        updated.ls_FinlAmnt = finalAmount;
+        updated.ls_EmiAmnt = emi;
+      }
     }
 
     setFormData(updated);
@@ -98,12 +107,27 @@ const LoanApply = ({ userData }) => {
     }
 
     try {
-      const payload = {
-        ls_EmpCode: userData.ls_EMPCODE,
-        ...formData,
+      // Format date to YYYYMMDD format
+      const formatDateForAPI = (dateString) => {
+        return dateString.replace(/-/g, '');
       };
 
+      const payload = {
+        ls_EmpCode: userData.ls_EMPCODE,
+        ls_LoanTyp: formData.ls_LoanTyp,
+        ls_ReqDate: formatDateForAPI(formData.ls_ReqDate),
+        ls_ReqAmnt: formData.ls_ReqAmnt,
+        ls_Intrst: formData.ls_Intrst,
+        ls_FinlAmnt: formData.ls_FinlAmnt,
+        ls_NoOfEmi: formData.ls_NoOfEmi,
+        ls_EmiAmnt: formData.ls_EmiAmnt,
+        ls_Reason: formData.ls_Reason,
+      };
+
+      console.log('Frontend Loan Application Payload:', payload);
       const res = await axios.post('http://localhost:5000/api/apply-loan', payload);
+      
+      console.log('Frontend Response:', res.data);
 
       if (res.data?.success) {
         setSuccessMessage(res.data.message || 'Loan application submitted successfully!');
@@ -118,12 +142,15 @@ const LoanApply = ({ userData }) => {
           ls_Reason: '',
         });
       } else {
+        console.error('Loan application failed:', res.data);
         setError(res.data?.message || 'Failed to submit loan application. Please try again.');
       }
     } catch (err) {
-      console.error('Submission failed:', err);
-      if (err.response) {
-        setError(err.response.data?.message || 'Failed to submit loan application. Please try again.');
+      console.error('Loan submission error:', err);
+      console.error('Error response:', err.response?.data);
+      
+      if (err.response?.data) {
+        setError(err.response.data.message || err.response.data.error || 'Failed to submit loan application. Please try again.');
       } else if (err.request) {
         setError('Network error. Please check your connection and try again.');
       } else {
@@ -178,7 +205,7 @@ const LoanApply = ({ userData }) => {
             onSubmit={handleSubmit}
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6"
           >
-            {/* Loan Type */}
+            {/* Loan Type and Request Date */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,14 +220,33 @@ const LoanApply = ({ userData }) => {
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="">Select Loan Type</option>
-                    {loanTypes.map((type, idx) => (
-                      <option key={idx} value={type.ls_NAME}>
-                        {type.ls_NAME}
-                      </option>
-                    ))}
+                    {loanTypes.length > 0 ? (
+                      loanTypes.map((type, idx) => (
+                        <option key={idx} value={type.ls_NAME || type.ls_Code || type.name}>
+                          {type.ls_NAME || type.ls_Code || type.name || `Loan Type ${idx + 1}`}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No loan types available</option>
+                    )}
                   </select>
                   <ChevronDown className="absolute top-3.5 right-3 w-4 h-4 text-gray-400" />
                 </div>
+              </div>
+
+              {/* Request Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Request Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="ls_ReqDate"
+                  value={formData.ls_ReqDate}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
 
               {/* Request Amount */}

@@ -107,7 +107,7 @@ function App() {
         path="/attendance-report"
         element={
           <RequireAuth user={userData}>
-            <AttendanceReport empCode={userData?.ls_EMPCODE} />
+            <AttendanceReport userData={userData} />
           </RequireAuth>
         }
       />
