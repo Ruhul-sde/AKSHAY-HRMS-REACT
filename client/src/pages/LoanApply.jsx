@@ -10,8 +10,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-const LoanApply = () => {
-  const [empCode, setEmpCode] = useState('');
+const LoanApply = ({ userData }) => {
   const [loanTypes, setLoanTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,25 +27,13 @@ const LoanApply = () => {
     ls_Reason: '',
   });
 
-  // Fetch employee code and loan types
+  // Fetch loan types
   useEffect(() => {
-    const storedEmpCode = localStorage.getItem('empCode');
-    if (!storedEmpCode) {
-      setError('Employee code not found. Please log in again.');
-      setLoading(false);
-      return;
-    }
-
-    setEmpCode(storedEmpCode);
-
     const fetchLoanTypes = async () => {
       try {
-        const res = await axios.get(
-          'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetLoanTypes'
-        );
-        const { lst_ClsMstrLoanTypDtls } = res.data;
-        if (Array.isArray(lst_ClsMstrLoanTypDtls)) {
-          setLoanTypes(lst_ClsMstrLoanTypDtls);
+        const res = await axios.get('http://localhost:5000/api/loan-types');
+        if (res.data?.success) {
+          setLoanTypes(res.data.loanTypes);
         } else {
           setError('No loan types found.');
         }
@@ -105,32 +92,43 @@ const LoanApply = () => {
     setSuccessMessage('');
     setError('');
 
+    if (!userData?.ls_EMPCODE) {
+      setError('Employee data not available. Please log in again.');
+      return;
+    }
+
     try {
       const payload = {
-        ls_EmpCode: empCode,
+        ls_EmpCode: userData.ls_EMPCODE,
         ...formData,
       };
 
-      await axios.post(
-        'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/LoanApply',
-        payload,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      const res = await axios.post('http://localhost:5000/api/apply-loan', payload);
 
-      setSuccessMessage('Loan application submitted successfully!');
-      setFormData({
-        ls_LoanTyp: '',
-        ls_ReqDate: new Date().toISOString().split('T')[0],
-        ls_ReqAmnt: '',
-        ls_Intrst: '',
-        ls_FinlAmnt: '',
-        ls_NoOfEmi: '',
-        ls_EmiAmnt: '',
-        ls_Reason: '',
-      });
+      if (res.data?.success) {
+        setSuccessMessage(res.data.message || 'Loan application submitted successfully!');
+        setFormData({
+          ls_LoanTyp: '',
+          ls_ReqDate: new Date().toISOString().split('T')[0],
+          ls_ReqAmnt: '',
+          ls_Intrst: '',
+          ls_FinlAmnt: '',
+          ls_NoOfEmi: '',
+          ls_EmiAmnt: '',
+          ls_Reason: '',
+        });
+      } else {
+        setError(res.data?.message || 'Failed to submit loan application. Please try again.');
+      }
     } catch (err) {
       console.error('Submission failed:', err);
-      setError('Failed to submit loan application. Please try again.');
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to submit loan application. Please try again.');
+      } else if (err.request) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('An unexpected error occurred.');
+      }
     }
   };
 
@@ -153,7 +151,7 @@ const LoanApply = () => {
             </div>
           </div>
           <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
-            Employee ID: <span className="font-medium">{empCode}</span>
+            Employee ID: <span className="font-medium">{userData?.ls_EMPCODE}</span>
           </div>
         </div>
 

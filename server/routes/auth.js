@@ -178,6 +178,13 @@ router.get('/loan-types', async (req, res) => {
 
 // ---------------- APPLY LOAN ----------------
 router.post('/apply-loan', async (req, res) => {
+  const required = ['ls_EmpCode', 'ls_LoanTyp', 'ls_ReqAmnt', 'ls_NoOfEmi', 'ls_Reason'];
+  const missing = required.filter(key => !req.body[key]);
+
+  if (missing.length > 0) {
+    return res.status(400).json({ success: false, message: `Missing fields: ${missing.join(', ')}` });
+  }
+
   try {
     const { data } = await axios.post(`${BASE_URL}/LoanApply`, req.body, axiosConfig);
     if (data.ls_Status === "S") {

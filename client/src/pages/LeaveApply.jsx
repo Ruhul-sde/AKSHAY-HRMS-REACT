@@ -118,7 +118,7 @@ const LeaveApply = ({ userData }) => {
         toTime = form.halfDayPeriod === 'AM' ? '13:00' : '18:00';
       }
 
-      const res = await axios.post('http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/LeavApply', {
+      const res = await axios.post('http://localhost:5000/api/apply-leave', {
         ls_EmpCode: userData.ls_EMPCODE.toString(),
         ls_FromDate: formatDate(form.dayType === 'multiDay' ? form.fromDate : form.date),
         ls_ToDate: formatDate(form.dayType === 'multiDay' ? form.toDate : form.date),
@@ -128,18 +128,11 @@ const LeaveApply = ({ userData }) => {
         ls_ToTime: form.dayType === 'halfDay' ? toTime : '',
         ls_LeavTyp: form.leaveType,
         ls_Reason: form.reason,
-        ls_Status: 'A',
         ls_GrpNo: '5'
-      }, {
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        withCredentials: false
       });
 
-      if (res.data?.li_ErrorCode === 0) {
-        setSuccess(res.data.ls_Message || 'Leave applied successfully');
+      if (res.data?.success) {
+        setSuccess(res.data.message || 'Leave applied successfully');
         // Reset form but keep the dayType selection
         setForm({
           leaveType: '',
@@ -152,7 +145,7 @@ const LeaveApply = ({ userData }) => {
           numDays: 0
         });
       } else {
-        setError(res.data?.ls_Message || 'Application failed. Please try again.');
+        setError(res.data?.message || 'Application failed. Please try again.');
       }
     } catch (err) {
       if (err.response) {
@@ -160,7 +153,7 @@ const LeaveApply = ({ userData }) => {
         setError(err.response.data?.message || 'Server error occurred');
       } else if (err.request) {
         // Request was made but no response received
-        setError('Network error. Please check your connection and CORS configuration.');
+        setError('Network error. Please check your connection and try again.');
       } else {
         // Something else happened
         setError('An unexpected error occurred.');

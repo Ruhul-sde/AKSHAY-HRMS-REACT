@@ -21,21 +21,25 @@ const LeaveHistory = ({ userData }) => {
       try {
         const today = dayjs().format('YYYYMMDD');
         const res = await axios.get(
-          `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetLeaveHistory`,
+          `http://localhost:5000/api/leave-history`,
           {
             params: {
-              EMPCode: userData.ls_EMPCODE,
-              Date: today,
+              ls_EmpCode: userData.ls_EMPCODE,
+              ls_DocDate: today,
             },
           }
         );
 
-        const list = res.data?.lst_ClsLeavHstryDtls;
-        if (Array.isArray(list) && list.length > 0) {
-          setLeaveData(list);
+        if (res.data?.success) {
+          const history = res.data.leaveHistory;
+          if (Array.isArray(history) && history.length > 0) {
+            setLeaveData(history);
+          } else {
+            setLeaveData([]);
+            setError('No leave history found.');
+          }
         } else {
-          setLeaveData([]);
-          setError('No leave history found.');
+          setError(res.data?.message || 'Failed to fetch leave history.');
         }
       } catch (err) {
         console.error(err);
@@ -71,18 +75,18 @@ const LeaveHistory = ({ userData }) => {
             </thead>
             <tbody>
               {leaveData.map((item, i) => {
-                const open = parseFloat(item.ls_OpenLeav || 0);
-                const used = parseFloat(item.ls_UsedLeav || 0);
+                const open = parseFloat(item.openLeave || 0);
+                const used = parseFloat(item.usedLeave || 0);
                 const balance = (open - used).toFixed(2);
 
                 return (
                   <tr key={i}>
-                    <td className="border px-4 py-2">{item.ls_LeavName}</td>
+                    <td className="border px-4 py-2">{item.leaveName}</td>
                     <td className="border px-4 py-2">{open}</td>
                     <td className="border px-4 py-2">{used}</td>
                     <td className="border px-4 py-2">{balance}</td>
                     <td className="border px-4 py-2">
-                      {item.ls_LeavDate ? dayjs(item.ls_LeavDate).format('DD MMM YYYY') : 'Never'}
+                      {item.leaveDate ? dayjs(item.leaveDate).format('DD MMM YYYY') : 'Never'}
                     </td>
                   </tr>
                 );
