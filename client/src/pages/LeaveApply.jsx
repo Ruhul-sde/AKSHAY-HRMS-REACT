@@ -12,7 +12,8 @@ const LeaveApply = ({ userData }) => {
     date: '',
     fromDate: '',
     toDate: '',
-    halfDayPeriod: 'AM', // AM or PM for half day
+    fromTime: '',
+    toTime: '',
     reason: '',
     numDays: 0
   });
@@ -58,8 +59,29 @@ const LeaveApply = ({ userData }) => {
         fromDate: '',
         toDate: '',
         date: '',
+        fromTime: '',
+        toTime: '',
         numDays: value === 'halfDay' ? 0.5 : value === 'fullDay' ? 1 : 0
       };
+    }
+
+    // Calculate half day duration based on time
+    if ((name === 'fromTime' || name === 'toTime') && form.dayType === 'halfDay') {
+      if (updated.fromTime && updated.toTime) {
+        const [fh, fm] = updated.fromTime.split(':').map(Number);
+        const [th, tm] = updated.toTime.split(':').map(Number);
+        const fromMinutes = fh * 60 + fm;
+        const toMinutes = th * 60 + tm;
+        const duration = toMinutes - fromMinutes;
+        
+        if (duration <= 0) {
+          setError('End time must be after start time');
+          updated.numDays = 0;
+        } else {
+          // Calculate as fraction of 8-hour workday (480 minutes)
+          updated.numDays = Math.min(duration / 480, 0.5);
+        }
+      }
     }
 
     if (name === 'date' && ['fullDay', 'halfDay'].includes(form.dayType)) {
@@ -103,6 +125,11 @@ const LeaveApply = ({ userData }) => {
       }
     }
 
+    if (form.dayType === 'halfDay' && (!form.fromTime || !form.toTime)) {
+      setError('Please select both start and end times for half day');
+      return false;
+    }
+
     if (form.numDays <= 0) {
       setError('Invalid leave duration');
       return false;
@@ -117,13 +144,13 @@ const LeaveApply = ({ userData }) => {
 
     setIsSubmitting(true);
     try {
-      // Set default times based on half day period
-      let fromTime = '09:00';
-      let toTime = '18:00';
+      // Set times based on form input
+      let fromTime = '';
+      let toTime = '';
 
       if (form.dayType === 'halfDay') {
-        fromTime = form.halfDayPeriod === 'AM' ? '09:00' : '13:00';
-        toTime = form.halfDayPeriod === 'AM' ? '13:00' : '18:00';
+        fromTime = form.fromTime;
+        toTime = form.toTime;
       }
 
       // Ensure fromDate and toDate are properly set
@@ -159,7 +186,8 @@ const LeaveApply = ({ userData }) => {
           date: '',
           fromDate: '',
           toDate: '',
-          halfDayPeriod: 'AM',
+          fromTime: '',
+          toTime: '',
           reason: '',
           numDays: 0
         });
@@ -295,46 +323,49 @@ const LeaveApply = ({ userData }) => {
               </div>
             </div>
 
-            {/* Half Day Period Selection (only shown when halfDay is selected) */}
+            {/* Half Day Time Selection (only shown when halfDay is selected) */}
             {form.dayType === 'halfDay' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Half Day Period <span className="text-red-500">*</span>
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Half Day Time <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer ${form.halfDayPeriod === 'AM' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      From Time
+                    </label>
                     <input
-                      type="radio"
-                      name="halfDayPeriod"
-                      value="AM"
-                      checked={form.halfDayPeriod === 'AM'}
+                      type="time"
+                      name="fromTime"
+                      value={form.fromTime}
                       onChange={handleChange}
-                      className="sr-only"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      required
+                      disabled={isSubmitting}
                     />
-                    <div className="flex items-center">
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-2 ${form.halfDayPeriod === 'AM' ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`}>
-                        {form.halfDayPeriod === 'AM' && <div className="w-2 h-2 rounded-full bg-white"></div>}
-                      </div>
-                      <span>Morning (9 AM - 1 PM)</span>
-                    </div>
-                  </label>
-                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer ${form.halfDayPeriod === 'PM' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      To Time
+                    </label>
                     <input
-                      type="radio"
-                      name="halfDayPeriod"
-                      value="PM"
-                      checked={form.halfDayPeriod === 'PM'}
+                      type="time"
+                      name="toTime"
+                      value={form.toTime}
                       onChange={handleChange}
-                      className="sr-only"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                      required
+                      disabled={isSubmitting}
                     />
-                    <div className="flex items-center">
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-2 ${form.halfDayPeriod === 'PM' ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`}>
-                        {form.halfDayPeriod === 'PM' && <div className="w-2 h-2 rounded-full bg-white"></div>}
-                      </div>
-                      <span>Afternoon (1 PM - 6 PM)</span>
-                    </div>
-                  </label>
+                  </div>
                 </div>
+                {form.fromTime && form.toTime && (
+                  <div className="p-3 bg-blue-50 text-blue-800 rounded-lg">
+                    <p className="text-sm font-medium">
+                      Half day from {form.fromTime} to {form.toTime}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -395,7 +426,7 @@ const LeaveApply = ({ userData }) => {
                   <div className="mt-2 p-3 bg-blue-50 text-blue-800 rounded-lg">
                     <p className="text-sm font-medium">
                       {form.dayType === 'halfDay' ? 
-                        `Half day (${form.halfDayPeriod === 'AM' ? 'Morning' : 'Afternoon'}) leave on ${dayjs(form.date).format('MMMM D, YYYY')}` : 
+                        `Half day leave on ${dayjs(form.date).format('MMMM D, YYYY')}${form.fromTime && form.toTime ? ` from ${form.fromTime} to ${form.toTime}` : ''}` : 
                         `Full day leave on ${dayjs(form.date).format('MMMM D, YYYY')}`}
                     </p>
                   </div>
