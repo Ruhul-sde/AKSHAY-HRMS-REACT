@@ -1,7 +1,23 @@
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import dayjs from 'dayjs';
+import { 
+  Calendar, 
+  Clock, 
+  FileText, 
+  CheckCircle, 
+  AlertCircle, 
+  Send,
+  User,
+  CalendarDays,
+  Timer,
+  MessageSquare,
+  ArrowRight,
+  Sparkles,
+  Info
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const LeaveApply = ({ userData }) => {
@@ -21,6 +37,7 @@ const LeaveApply = ({ userData }) => {
   const [success, setSuccess] = useState('');
   const [loadingLeaveTypes, setLoadingLeaveTypes] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
     const fetchLeaveTypes = async () => {
@@ -78,7 +95,6 @@ const LeaveApply = ({ userData }) => {
           setError('End time must be after start time');
           updated.numDays = 0;
         } else {
-          // Calculate as fraction of 8-hour workday (480 minutes)
           updated.numDays = Math.min(duration / 480, 0.5);
         }
       }
@@ -117,7 +133,6 @@ const LeaveApply = ({ userData }) => {
       return false;
     }
 
-    // For single day leaves, ensure fromDate and toDate are set
     if (['fullDay', 'halfDay'].includes(form.dayType) && form.date) {
       if (!form.fromDate || !form.toDate) {
         setError('Date validation error');
@@ -144,7 +159,6 @@ const LeaveApply = ({ userData }) => {
 
     setIsSubmitting(true);
     try {
-      // Set times based on form input
       let fromTime = '';
       let toTime = '';
 
@@ -153,13 +167,11 @@ const LeaveApply = ({ userData }) => {
         toTime = form.toTime;
       }
 
-      // Ensure fromDate and toDate are properly set
       let finalFromDate, finalToDate;
       if (form.dayType === 'multiDay') {
         finalFromDate = form.fromDate;
         finalToDate = form.toDate;
       } else {
-        // For fullDay and halfDay, use the date field for both fromDate and toDate
         finalFromDate = form.date;
         finalToDate = form.date;
       }
@@ -179,7 +191,6 @@ const LeaveApply = ({ userData }) => {
 
       if (res.data?.success) {
         setSuccess(res.data.message || 'Leave applied successfully');
-        // Reset form but keep the dayType selection
         setForm({
           leaveType: '',
           dayType: form.dayType,
@@ -196,13 +207,10 @@ const LeaveApply = ({ userData }) => {
       }
     } catch (err) {
       if (err.response) {
-        // Server responded with non-2xx status
         setError(err.response.data?.message || 'Server error occurred');
       } else if (err.request) {
-        // Request was made but no response received
         setError('Network error. Please check your connection and try again.');
       } else {
-        // Something else happened
         setError('An unexpected error occurred.');
       }
     } finally {
@@ -212,262 +220,534 @@ const LeaveApply = ({ userData }) => {
 
   const today = dayjs().format('YYYY-MM-DD');
 
+  const getStepProgress = () => {
+    if (form.leaveType && form.dayType) {
+      if (form.dayType === 'multiDay' && form.fromDate && form.toDate) return 3;
+      if (['fullDay', 'halfDay'].includes(form.dayType) && form.date) {
+        if (form.dayType === 'halfDay' && form.fromTime && form.toTime) return 3;
+        if (form.dayType === 'fullDay') return 3;
+      }
+      return 2;
+    }
+    if (form.leaveType) return 2;
+    return 1;
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.4, ease: "easeOut" }
+    }
+  };
+
+  const stepVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar userData={userData} />
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      
+      <motion.div 
+        className="max-w-4xl mx-auto px-4 py-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.3 }} 
-          className="bg-white rounded-xl shadow-lg p-6"
+          variants={cardVariants}
+          className="text-center mb-8"
         >
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Apply for Leave</h1>
-            <p className="text-gray-600 mt-2">Submit your leave request for approval</p>
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl">
+              <FileText className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                Apply for Leave
+              </h1>
+              <p className="text-gray-600 mt-1">Submit your time-off request with ease</p>
+            </div>
           </div>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <motion.div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                    getStepProgress() >= step
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                  animate={{
+                    scale: getStepProgress() >= step ? 1.1 : 1,
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {getStepProgress() >= step ? <CheckCircle className="w-5 h-5" /> : step}
+                </motion.div>
+                {step < 3 && (
+                  <div className={`w-12 h-1 mx-2 rounded transition-all duration-300 ${
+                    getStepProgress() > step ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-200'
+                  }`} />
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-center gap-8 mt-4 text-sm">
+            <span className={getStepProgress() >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}>Leave Type</span>
+            <span className={getStepProgress() >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}>Duration</span>
+            <span className={getStepProgress() >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}>Review</span>
+          </div>
+        </motion.div>
 
+        {/* Alert Messages */}
+        <AnimatePresence>
           {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-              <p className="font-medium">{error}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <p className="font-medium">{error}</p>
+              </div>
+            </motion.div>
           )}
+          
           {success && (
-            <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
-              <p className="font-medium">{success}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-2xl shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <p className="font-medium">{success}</p>
+              </div>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Leave Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Leave Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="leaveType"
-                value={form.leaveType}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                disabled={loadingLeaveTypes || isSubmitting}
-                required
-              >
-                <option value="">Select Leave Type</option>
-                {leaveTypes.map(type => (
-                  <option key={type.code} value={type.code}>
-                    {type.name} ({type.code})
-                  </option>
-                ))}
-              </select>
-              {loadingLeaveTypes && (
-                <p className="mt-1 text-sm text-gray-500">Loading leave types...</p>
-              )}
-            </div>
-
-            {/* Duration Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Duration Type <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {/* Full Day Option */}
-                <label className={`flex flex-col items-center p-4 border rounded-lg cursor-pointer transition ${form.dayType === 'fullDay' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                  <input
-                    type="radio"
-                    name="dayType"
-                    value="fullDay"
-                    checked={form.dayType === 'fullDay'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center mb-2 ${form.dayType === 'fullDay' ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`}>
-                    {form.dayType === 'fullDay' && <div className="w-3 h-3 rounded-full bg-white"></div>}
-                  </div>
-                  <span className="font-medium">Full Day</span>
-                  <span className="text-sm text-gray-500 mt-1">1 day</span>
-                </label>
-
-                {/* Half Day Option */}
-                <label className={`flex flex-col items-center p-4 border rounded-lg cursor-pointer transition ${form.dayType === 'halfDay' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                  <input
-                    type="radio"
-                    name="dayType"
-                    value="halfDay"
-                    checked={form.dayType === 'halfDay'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center mb-2 ${form.dayType === 'halfDay' ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`}>
-                    {form.dayType === 'halfDay' && <div className="w-3 h-3 rounded-full bg-white"></div>}
-                  </div>
-                  <span className="font-medium">Half Day</span>
-                  <span className="text-sm text-gray-500 mt-1">0.5 day</span>
-                </label>
-
-                {/* Multi-Day Option */}
-                <label className={`flex flex-col items-center p-4 border rounded-lg cursor-pointer transition ${form.dayType === 'multiDay' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
-                  <input
-                    type="radio"
-                    name="dayType"
-                    value="multiDay"
-                    checked={form.dayType === 'multiDay'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center mb-2 ${form.dayType === 'multiDay' ? 'border-blue-500 bg-blue-500' : 'border-gray-400'}`}>
-                    {form.dayType === 'multiDay' && <div className="w-3 h-3 rounded-full bg-white"></div>}
-                  </div>
-                  <span className="font-medium">Multi-Day</span>
-                  <span className="text-sm text-gray-500 mt-1">Bulk leave</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Half Day Time Selection (only shown when halfDay is selected) */}
-            {form.dayType === 'halfDay' && (
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Half Day Time <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      From Time
-                    </label>
-                    <input
-                      type="time"
-                      name="fromTime"
-                      value={form.fromTime}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      To Time
-                    </label>
-                    <input
-                      type="time"
-                      name="toTime"
-                      value={form.toTime}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-                {form.fromTime && form.toTime && (
-                  <div className="p-3 bg-blue-50 text-blue-800 rounded-lg">
-                    <p className="text-sm font-medium">
-                      Half day from {form.fromTime} to {form.toTime}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Date Selection */}
-            {form.dayType === 'multiDay' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    From Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="fromDate"
-                    value={form.fromDate}
-                    onChange={handleChange}
-                    min={today}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    required
-                  />
+        {/* Main Form Card */}
+        <motion.div 
+          variants={cardVariants}
+          className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden"
+        >
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            {/* Step 1: Leave Type Selection */}
+            <motion.div 
+              variants={stepVariants}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <User className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    To Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="toDate"
-                    value={form.toDate}
-                    onChange={handleChange}
-                    min={form.fromDate || today}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    required
-                  />
+                  <h3 className="text-xl font-semibold text-gray-800">Select Leave Type</h3>
+                  <p className="text-gray-500 text-sm">Choose the type of leave you want to apply for</p>
                 </div>
-                {form.fromDate && form.toDate && (
-                  <div className="p-3 bg-blue-50 text-blue-800 rounded-lg">
-                    <p className="text-sm font-medium">
-                      Total leave days: <span className="font-bold">{form.numDays}</span>
-                    </p>
-                  </div>
-                )}
               </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  value={form.date}
+              
+              <div className="relative">
+                <select
+                  name="leaveType"
+                  value={form.leaveType}
                   onChange={handleChange}
-                  min={today}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-gray-50 hover:bg-white text-lg font-medium appearance-none cursor-pointer"
+                  disabled={loadingLeaveTypes || isSubmitting}
                   required
-                />
-                {form.date && (
-                  <div className="mt-2 p-3 bg-blue-50 text-blue-800 rounded-lg">
-                    <p className="text-sm font-medium">
-                      {form.dayType === 'halfDay' ? 
-                        `Half day leave on ${dayjs(form.date).format('MMMM D, YYYY')}${form.fromTime && form.toTime ? ` from ${form.fromTime} to ${form.toTime}` : ''}` : 
-                        `Full day leave on ${dayjs(form.date).format('MMMM D, YYYY')}`}
-                    </p>
-                  </div>
-                )}
+                >
+                  <option value="">
+                    {loadingLeaveTypes ? 'Loading leave types...' : 'Select Leave Type'}
+                  </option>
+                  {leaveTypes.map(type => (
+                    <option key={type.code} value={type.code}>
+                      {type.name} ({type.code})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <ArrowRight className="w-5 h-5 text-gray-400 rotate-90" />
+                </div>
               </div>
+            </motion.div>
+
+            {/* Step 2: Duration Type Selection */}
+            {form.leaveType && (
+              <motion.div 
+                variants={stepVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-purple-100 rounded-xl">
+                    <CalendarDays className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-800">Choose Duration</h3>
+                    <p className="text-gray-500 text-sm">Select how long you need to be away</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Full Day Option */}
+                  <motion.label 
+                    className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
+                      form.dayType === 'fullDay' 
+                        ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <input
+                      type="radio"
+                      name="dayType"
+                      value="fullDay"
+                      checked={form.dayType === 'fullDay'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center justify-between mb-3">
+                      <Calendar className={`w-6 h-6 ${form.dayType === 'fullDay' ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        form.dayType === 'fullDay' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                      }`}>
+                        {form.dayType === 'fullDay' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                      </div>
+                    </div>
+                    <h4 className="font-semibold text-gray-800 mb-1">Full Day</h4>
+                    <p className="text-sm text-gray-500">Complete day off</p>
+                    <div className="mt-3 text-xs font-medium text-blue-600">1 day</div>
+                  </motion.label>
+
+                  {/* Half Day Option */}
+                  <motion.label 
+                    className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
+                      form.dayType === 'halfDay' 
+                        ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-100' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <input
+                      type="radio"
+                      name="dayType"
+                      value="halfDay"
+                      checked={form.dayType === 'halfDay'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center justify-between mb-3">
+                      <Timer className={`w-6 h-6 ${form.dayType === 'halfDay' ? 'text-purple-600' : 'text-gray-400'}`} />
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        form.dayType === 'halfDay' ? 'border-purple-500 bg-purple-500' : 'border-gray-300'
+                      }`}>
+                        {form.dayType === 'halfDay' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                      </div>
+                    </div>
+                    <h4 className="font-semibold text-gray-800 mb-1">Half Day</h4>
+                    <p className="text-sm text-gray-500">Custom time range</p>
+                    <div className="mt-3 text-xs font-medium text-purple-600">≤ 0.5 day</div>
+                  </motion.label>
+
+                  {/* Multi-Day Option */}
+                  <motion.label 
+                    className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
+                      form.dayType === 'multiDay' 
+                        ? 'border-green-500 bg-green-50 shadow-lg shadow-green-100' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <input
+                      type="radio"
+                      name="dayType"
+                      value="multiDay"
+                      checked={form.dayType === 'multiDay'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center justify-between mb-3">
+                      <CalendarDays className={`w-6 h-6 ${form.dayType === 'multiDay' ? 'text-green-600' : 'text-gray-400'}`} />
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        form.dayType === 'multiDay' ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                      }`}>
+                        {form.dayType === 'multiDay' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                      </div>
+                    </div>
+                    <h4 className="font-semibold text-gray-800 mb-1">Multi-Day</h4>
+                    <p className="text-sm text-gray-500">Extended leave</p>
+                    <div className="mt-3 text-xs font-medium text-green-600">Multiple days</div>
+                  </motion.label>
+                </div>
+              </motion.div>
             )}
 
-            {/* Reason */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason (Optional)
-              </label>
-              <textarea
-                name="reason"
-                placeholder="Enter reason for leave (optional)"
-                value={form.reason}
-                onChange={handleChange}
-                rows="3"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              ></textarea>
-            </div>
+            {/* Step 3: Date and Time Selection */}
+            {form.leaveType && form.dayType && (
+              <motion.div 
+                variants={stepVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-green-100 rounded-xl">
+                    <Clock className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-800">Select Dates & Times</h3>
+                    <p className="text-gray-500 text-sm">Specify when you need time off</p>
+                  </div>
+                </div>
+
+                {/* Half Day Time Selection */}
+                {form.dayType === 'halfDay' && (
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Timer className="w-5 h-5 text-purple-600" />
+                      <h4 className="font-semibold text-gray-800">Custom Time Range</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          From Time
+                        </label>
+                        <input
+                          type="time"
+                          name="fromTime"
+                          value={form.fromTime}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200"
+                          required
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          To Time
+                        </label>
+                        <input
+                          type="time"
+                          name="toTime"
+                          value={form.toTime}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200"
+                          required
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                    {form.fromTime && form.toTime && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-3 bg-white border border-purple-200 rounded-xl"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Info className="w-4 h-4 text-purple-600" />
+                          <p className="text-sm font-medium text-purple-800">
+                            Half day from {form.fromTime} to {form.toTime}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
+                {/* Date Selection */}
+                {form.dayType === 'multiDay' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        From Date
+                      </label>
+                      <input
+                        type="date"
+                        name="fromDate"
+                        value={form.fromDate}
+                        onChange={handleChange}
+                        min={today}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        To Date
+                      </label>
+                      <input
+                        type="date"
+                        name="toDate"
+                        value={form.toDate}
+                        onChange={handleChange}
+                        min={form.fromDate || today}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200"
+                        required
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={form.date}
+                      onChange={handleChange}
+                      min={today}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Summary Card */}
+                {((form.dayType === 'multiDay' && form.fromDate && form.toDate) || 
+                  (['fullDay', 'halfDay'].includes(form.dayType) && form.date)) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-semibold text-gray-800">Leave Summary</h4>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Duration:</span>
+                        <span className="font-semibold text-gray-800">
+                          {form.numDays} {form.numDays === 1 ? 'day' : 'days'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Type:</span>
+                        <span className="font-semibold text-gray-800">
+                          {form.dayType === 'fullDay' ? 'Full Day' : 
+                           form.dayType === 'halfDay' ? 'Half Day' : 'Multi-Day'}
+                        </span>
+                      </div>
+                      {form.dayType === 'halfDay' && form.fromTime && form.toTime && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Time:</span>
+                          <span className="font-semibold text-gray-800">
+                            {form.fromTime} - {form.toTime}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Reason Section */}
+            {form.leaveType && form.dayType && (
+              <motion.div 
+                variants={stepVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-orange-100 rounded-xl">
+                    <MessageSquare className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Reason (Optional)</h3>
+                    <p className="text-gray-500 text-sm">Brief description of your leave</p>
+                  </div>
+                </div>
+                <textarea
+                  name="reason"
+                  placeholder="Enter reason for leave (optional)"
+                  value={form.reason}
+                  onChange={handleChange}
+                  rows="4"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-200 resize-none"
+                />
+              </motion.div>
+            )}
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : 'Apply for Leave'}
-            </button>
+            {form.leaveType && form.dayType && (
+              <motion.div
+                variants={stepVariants}
+                initial="hidden"
+                animate="visible"
+                className="pt-6"
+              >
+                <motion.button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full group relative overflow-hidden py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-300 ${
+                    isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
+                  }`}
+                  whileHover={!isSubmitting ? { scale: 1.02 } : {}}
+                  whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+                >
+                  <div className="flex items-center justify-center gap-3">
+                    {isSubmitting ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                        />
+                        Processing Application...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        Submit Leave Application
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Animated background */}
+                  {!isSubmitting && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      initial={false}
+                    />
+                  )}
+                </motion.button>
+              </motion.div>
+            )}
           </form>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 };

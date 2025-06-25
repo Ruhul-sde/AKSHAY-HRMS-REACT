@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-const dayjs = require('dayjs');
-
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 
 const BASE_URL = "http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc";
@@ -206,7 +206,7 @@ router.get('/loan-types', async (req, res) => {
   try {
     const { data } = await axios.get(`${BASE_URL}/GetLoanTypes`);
     console.log('Loan Types API Response:', JSON.stringify(data, null, 2));
-    
+
     const { lst_ClsMstrLoanTypDtls = [] } = data;
 
     if (!lst_ClsMstrLoanTypDtls || lst_ClsMstrLoanTypDtls.length === 0) {
@@ -247,9 +247,9 @@ router.post('/apply-loan', async (req, res) => {
   try {
     const response = await axios.post(`${BASE_URL}/LoanApply`, payload, axiosConfig);
     console.log('Loan API Response:', JSON.stringify(response.data, null, 2));
-    
+
     const { data } = response;
-    
+
     // Check if the response indicates success
     if (data && data.ls_Status === "S") {
       return res.json({ 
@@ -267,7 +267,7 @@ router.post('/apply-loan', async (req, res) => {
     }
   } catch (err) {
     console.error('Loan Application Error:', err.response?.data || err.message);
-    
+
     // If there's a response from the API with error details
     if (err.response?.data) {
       return res.status(400).json({
@@ -276,7 +276,7 @@ router.post('/apply-loan', async (req, res) => {
         error: err.response.data
       });
     }
-    
+
     return handleApiError(res, err, "Loan application failed");
   }
 });
@@ -328,6 +328,26 @@ router.get('/attendance', async (req, res) => {
   } catch (err) {
     return handleApiError(res, err, "Failed to fetch attendance report");
   }
+});
+
+// ---------------- EMPLOYEE IMAGE ----------------
+router.get('/employee-image', async (req, res) => {
+  const { imagePath } = req.query;
+
+  if (!imagePath) {
+    return res.status(400).json({ success: false, message: "Image path is required" });
+  }
+
+  // Construct the absolute path to the image
+  const absoluteImagePath = imagePath;  // Assuming the path is already absolute
+
+  // Check if the file exists
+  if (!fs.existsSync(absoluteImagePath)) {
+    return res.status(404).json({ success: false, message: "Image not found" });
+  }
+
+  // Send the image file
+  res.sendFile(absoluteImagePath);
 });
 
 
