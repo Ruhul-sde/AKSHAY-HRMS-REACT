@@ -62,7 +62,7 @@ function App() {
         path="/apply-leave"
         element={
           <RequireAuth user={userData}>
-            <LeaveApply userData={userData} />
+            <LeaveApply userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
@@ -71,7 +71,7 @@ function App() {
         path="/change-password"
         element={
           <RequireAuth user={userData}>
-            <ChangePassword userData={userData} />
+            <ChangePassword userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
@@ -80,7 +80,7 @@ function App() {
         path="/leave-history"
         element={
           <RequireAuth user={userData}>
-            <LeaveHistory userData={userData} />
+            <LeaveHistory userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
@@ -89,7 +89,7 @@ function App() {
         path="/pending-leaves"
         element={
           <RequireAuth user={userData}>
-            <PendingLeaves userData={userData} />
+            <PendingLeaves userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
@@ -98,7 +98,7 @@ function App() {
         path="/apply-loan"
         element={
           <RequireAuth user={userData}>
-            <LoanApply userData={userData} />
+            <LoanApply userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
@@ -107,7 +107,7 @@ function App() {
         path="/attendance-report"
         element={
           <RequireAuth user={userData}>
-            <AttendanceReport userData={userData} />
+            <AttendanceReport userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

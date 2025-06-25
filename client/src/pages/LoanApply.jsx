@@ -33,7 +33,7 @@ const LoanApply = ({ userData }) => {
       try {
         const res = await axios.get('http://localhost:5000/api/loan-types');
         console.log('Loan Types Response:', res.data);
-        
+
         if (res.data?.success && res.data.loanTypes?.length > 0) {
           setLoanTypes(res.data.loanTypes);
         } else {
@@ -76,7 +76,7 @@ const LoanApply = ({ userData }) => {
       const emiCount = parseInt(
         name === 'ls_NoOfEmi' ? value : formData.ls_NoOfEmi || 0
       );
-      
+
       let interest = 0;
       if (name === 'ls_LoanTyp') {
         const selected = loanTypes.find((lt) => lt.ls_NAME === value);
@@ -126,7 +126,7 @@ const LoanApply = ({ userData }) => {
 
       console.log('Frontend Loan Application Payload:', payload);
       const res = await axios.post('http://localhost:5000/api/apply-loan', payload);
-      
+
       console.log('Frontend Response:', res.data);
 
       if (res.data?.success) {
@@ -148,7 +148,7 @@ const LoanApply = ({ userData }) => {
     } catch (err) {
       console.error('Loan submission error:', err);
       console.error('Error response:', err.response?.data);
-      
+
       if (err.response?.data) {
         setError(err.response.data.message || err.response.data.error || 'Failed to submit loan application. Please try again.');
       } else if (err.request) {
@@ -161,7 +161,7 @@ const LoanApply = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar userData={userData} />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}

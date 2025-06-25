@@ -87,7 +87,7 @@ const Navbar = ({ setUserData, userData }) => {
             ]}
           />
 
-          <li className="relative">
+          <li className="relative group">
             <button
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors overflow-hidden border border-gray-200"
@@ -103,6 +103,16 @@ const Navbar = ({ setUserData, userData }) => {
                 <User size={18} className="text-gray-600" />
               )}
             </button>
+
+            {/* Tooltip for user info */}
+            <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50 transition-all duration-200 ease-in-out transform group-hover:translate-y-0 translate-y-1">
+              <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
+                <div className="font-medium">{userData?.ls_EMPNAME || 'Loading...'}</div>
+                <div className="text-gray-300 text-xs">{userData?.ls_Email || 'Loading...'}</div>
+                {/* Arrow pointing up */}
+                <div className="absolute bottom-full right-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+              </div>
+            </div>
 
             <AnimatePresence>
               {profileOpen && (

@@ -28,7 +28,7 @@ const Dashboard = ({ userData, setUserData }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white font-sans">
-      <Navbar setUserData={setUserData} />
+      <Navbar setUserData={setUserData} userData={userData} />
 
       <main className="p-6 max-w-7xl mx-auto">
         {/* Welcome Message */}

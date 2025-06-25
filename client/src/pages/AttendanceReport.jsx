@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -82,9 +81,9 @@ const AttendanceReport = ({ userData }) => {
       'H': { label: 'Holiday', class: 'bg-red-100 text-red-800' },
       'L': { label: 'Leave', class: 'bg-yellow-100 text-yellow-800' }
     };
-    
+
     const typeInfo = typeMap[dayType] || { label: dayType || 'Unknown', class: 'bg-gray-100 text-gray-800' };
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeInfo.class}`}>
         {typeInfo.label}
@@ -106,7 +105,7 @@ const AttendanceReport = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navbar userData={userData} />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -120,7 +119,7 @@ const AttendanceReport = ({ userData }) => {
             <Calendar className="w-5 h-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900">Month Selection</h2>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex-1 max-w-xs">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -136,7 +135,7 @@ const AttendanceReport = ({ userData }) => {
               />
               <p className="text-xs text-gray-500 mt-1">Format: YYYY-MM (e.g., 2025-06)</p>
             </div>
-            
+
             <button
               onClick={fetchAttendance}
               disabled={loading}
