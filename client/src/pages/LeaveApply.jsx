@@ -84,22 +84,30 @@ const LeaveApply = ({ userData }) => {
       setError('Please select a leave type');
       return false;
     }
-    
+
     if (['fullDay', 'halfDay'].includes(form.dayType) && !form.date) {
       setError('Please select a date');
       return false;
     }
-    
+
     if (form.dayType === 'multiDay' && (!form.fromDate || !form.toDate)) {
       setError('Please select both start and end dates');
       return false;
     }
-    
+
+    // For single day leaves, ensure fromDate and toDate are set
+    if (['fullDay', 'halfDay'].includes(form.dayType) && form.date) {
+      if (!form.fromDate || !form.toDate) {
+        setError('Date validation error');
+        return false;
+      }
+    }
+
     if (form.numDays <= 0) {
       setError('Invalid leave duration');
       return false;
     }
-    
+
     return true;
   };
 
@@ -112,16 +120,27 @@ const LeaveApply = ({ userData }) => {
       // Set default times based on half day period
       let fromTime = '09:00';
       let toTime = '18:00';
-      
+
       if (form.dayType === 'halfDay') {
         fromTime = form.halfDayPeriod === 'AM' ? '09:00' : '13:00';
         toTime = form.halfDayPeriod === 'AM' ? '13:00' : '18:00';
       }
 
+      // Ensure fromDate and toDate are properly set
+      let finalFromDate, finalToDate;
+      if (form.dayType === 'multiDay') {
+        finalFromDate = form.fromDate;
+        finalToDate = form.toDate;
+      } else {
+        // For fullDay and halfDay, use the date field for both fromDate and toDate
+        finalFromDate = form.date;
+        finalToDate = form.date;
+      }
+
       const res = await axios.post('http://localhost:5000/api/apply-leave', {
         ls_EmpCode: userData.ls_EMPCODE.toString(),
-        ls_FromDate: formatDate(form.dayType === 'multiDay' ? form.fromDate : form.date),
-        ls_ToDate: formatDate(form.dayType === 'multiDay' ? form.toDate : form.date),
+        ls_FromDate: formatDate(finalFromDate),
+        ls_ToDate: formatDate(finalToDate),
         ls_DocDate: formatDate(dayjs()),
         ls_NofDays: form.numDays.toString(),
         ls_FromTime: form.dayType === 'halfDay' ? fromTime : '',
@@ -167,7 +186,7 @@ const LeaveApply = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navbar />
+      <Navbar userData={userData} />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 

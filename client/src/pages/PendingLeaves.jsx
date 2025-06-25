@@ -1,39 +1,37 @@
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Card from '../components/Card';
 import { Loader2, AlertTriangle, CalendarClock } from 'lucide-react';
 
-const PendingLeaves = () => {
-  const [empCode, setEmpCode] = useState('');
+const PendingLeaves = ({ userData }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const today = new Date().toISOString().split('T')[0];
-
   useEffect(() => {
-    const storedEmpCode = localStorage.getItem('empCode');
+    const fetchPendingLeaves = async () => {
+      if (!userData?.ls_EMPCODE) {
+        setError('Employee code not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
 
-    if (!storedEmpCode) {
-      setError('Employee code not found. Please log in again.');
-      setLoading(false);
-      return;
-    }
-
-    setEmpCode(storedEmpCode);
-
-    const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetPendingLeave?EMPCode=${storedEmpCode}&Date=${today}`
-        );
+        const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        
+        const response = await axios.get('http://localhost:5000/api/pending-leaves', {
+          params: {
+            ls_EmpCode: userData.ls_EMPCODE,
+            ls_DocDate: today
+          }
+        });
 
-        const { l_ClsErrorStatus, lst_ClsPendingLeavDtls } = response.data;
-
-        if (l_ClsErrorStatus?.ls_ErrorCode === '0' && Array.isArray(lst_ClsPendingLeavDtls)) {
-          setPendingLeaves(lst_ClsPendingLeavDtls);
+        if (response.data?.success) {
+          setPendingLeaves(response.data.pendingLeaves || []);
         } else {
+          setError(response.data?.message || 'Failed to fetch pending leaves.');
           setPendingLeaves([]);
         }
       } catch (err) {
@@ -44,12 +42,12 @@ const PendingLeaves = () => {
       }
     };
 
-    fetchData();
-  }, []);
+    fetchPendingLeaves();
+  }, [userData]);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
+      <Navbar userData={userData} />
 
       <div className="container mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -87,12 +85,12 @@ const PendingLeaves = () => {
                 <tbody className="bg-white divide-y divide-gray-100">
                   {pendingLeaves.map((leave, index) => (
                     <tr key={index} className="hover:bg-gray-50 transition-all">
-                      <td className="px-4 py-2">{leave.ls_LeavTyp}</td>
-                      <td className="px-4 py-2">{leave.ls_LeavName}</td>
-                      <td className="px-4 py-2 text-center">{leave.ls_OpenLeav}</td>
-                      <td className="px-4 py-2 text-center">{leave.ls_UsedLeav}</td>
+                      <td className="px-4 py-2">{leave.leaveType}</td>
+                      <td className="px-4 py-2">{leave.leaveName}</td>
+                      <td className="px-4 py-2 text-center">{leave.openLeave}</td>
+                      <td className="px-4 py-2 text-center">{leave.usedLeave}</td>
                       <td className="px-4 py-2 text-center font-semibold text-blue-600">
-                        {leave.ls_PendLeav}
+                        {leave.pendingLeave}
                       </td>
                     </tr>
                   ))}
