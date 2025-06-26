@@ -84,7 +84,7 @@ const Navbar = ({ setUserData, userData }) => {
               transition={{ duration: 0.3 }}
             />
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-              HRMS
+              AKSHAY HRMS
             </span>
           </NavLink>
         </motion.div>
