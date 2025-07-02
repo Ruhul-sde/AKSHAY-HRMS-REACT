@@ -9,6 +9,7 @@ import LeaveHistory from './pages/LeaveHistory';
 import PendingLeaves from './pages/PendingLeaves';
 import LoanApply from './pages/LoanApply';
 import AttendanceReport from './pages/AttendanceReport';
+import Help from './pages/Help';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -108,6 +109,15 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <AttendanceReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/help"
+        element={
+          <RequireAuth user={userData}>
+            <Help userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ChevronDown, Menu, X, User, Settings, LogOut, Bell } from 'lucide-react';
+import { ChevronDown, Menu, X, User, Settings, LogOut, Bell, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
 
@@ -241,6 +240,11 @@ const Navbar = ({ setUserData, userData }) => {
                   {/* Menu Items */}
                   <div className="py-2">
                     <ProfileMenuItem
+                      to="/help"
+                      icon={<Info size={16} />}
+                      label="Help"
+                    />
+                    <ProfileMenuItem
                       to="/profile"
                       icon={<User size={16} />}
                       label="My Profile"
@@ -309,6 +313,10 @@ const Navbar = ({ setUserData, userData }) => {
 
                 {/* Mobile Profile Section */}
                 <div className="pt-4 mt-4 border-t border-gray-100">
+                  <MobileNavItem to="/help" setMenuOpen={setMenuOpen}>
+                    <Info size={18} className="mr-3" />
+                    Help
+                  </MobileNavItem>
                   <MobileNavItem to="/profile" setMenuOpen={setMenuOpen}>
                     <User size={18} className="mr-3" />
                     Profile

@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const dayjs = require('dayjs');
 const router = express.Router();
 
 const BASE_URL = "http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc";
@@ -165,7 +166,7 @@ router.get('/pending-leaves', async (req, res) => {
     const { data } = await axios.get(`${BASE_URL}/GetPendingLeave?EMPCode=${ls_EmpCode}&Date=${ls_DocDate}`);
     const { l_ClsErrorStatus, lst_ClsPendingLeavDtls = [] } = data;
 
-    if (l_ClsErrorStatus?.ls_ErrorCode !== '0') {
+    if (l_ClsErrorStatus?.ls_Status !== "S") {
       return res.status(400).json({ success: false, message: l_ClsErrorStatus?.ls_Message || "Failed to fetch pending leaves" });
     }
 
@@ -242,15 +243,10 @@ router.post('/apply-loan', async (req, res) => {
     ls_Reason: req.body.ls_Reason
   };
 
-  console.log('Backend Loan Payload:', JSON.stringify(payload, null, 2));
-
   try {
     const response = await axios.post(`${BASE_URL}/LoanApply`, payload, axiosConfig);
-    console.log('Loan API Response:', JSON.stringify(response.data, null, 2));
-
     const { data } = response;
 
-    // Check if the response indicates success
     if (data && data.ls_Status === "S") {
       return res.json({ 
         success: true, 
@@ -258,17 +254,13 @@ router.post('/apply-loan', async (req, res) => {
         data: data 
       });
     } else {
-      // API returned an error status
-      console.error('Loan API Error Response:', data);
       return res.status(400).json({ 
         success: false, 
-        message: data?.ls_Message || "Loan application failed - please check your details and try again" 
+        message: data?.ls_Message || "Loan application failed - please check your details and try again",
+        apiResponse: data
       });
     }
   } catch (err) {
-    console.error('Loan Application Error:', err.response?.data || err.message);
-
-    // If there's a response from the API with error details
     if (err.response?.data) {
       return res.status(400).json({
         success: false,
@@ -284,8 +276,6 @@ router.post('/apply-loan', async (req, res) => {
 // ---------------- GET ATTENDANCE ----------------
 router.get('/attendance', async (req, res) => {
   const { ls_EmpCode, ls_Month } = req.query;
-
-  console.log('Attendance API - Received params:', { ls_EmpCode, ls_Month });
 
   if (!ls_EmpCode || !ls_Month) {
     return res.status(400).json({ success: false, message: "EMPCode and Month are required." });
@@ -338,17 +328,27 @@ router.get('/employee-image', async (req, res) => {
     return res.status(400).json({ success: false, message: "Image path is required" });
   }
 
-  // Construct the absolute path to the image
-  const absoluteImagePath = imagePath;  // Assuming the path is already absolute
+  // Basic security check - prevent directory traversal
+  if (imagePath.includes('../') || imagePath.startsWith('/') || imagePath.match(/[A-Za-z]:\\/)) {
+    return res.status(400).json({ success: false, message: "Invalid image path" });
+  }
 
-  // Check if the file exists
+  // Construct path safely
+  const imagesBaseDir = path.join(__dirname, '..', 'employee_images');
+  const absoluteImagePath = path.join(imagesBaseDir, imagePath);
+
+  // Verify the path is within the allowed directory
+  if (!absoluteImagePath.startsWith(imagesBaseDir)) {
+    return res.status(400).json({ success: false, message: "Invalid image path" });
+  }
+
+  // Check if file exists
   if (!fs.existsSync(absoluteImagePath)) {
     return res.status(404).json({ success: false, message: "Image not found" });
   }
 
-  // Send the image file
+  // Send the file
   res.sendFile(absoluteImagePath);
 });
-
 
 module.exports = router;
