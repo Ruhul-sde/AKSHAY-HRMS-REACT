@@ -12,4 +12,4 @@ const LoadingState = ({ message = 'Loading...' }) => (
   </div>
 );
 
-export default React.memo(LoadingState);
+export default React.memo(LoadingState); 

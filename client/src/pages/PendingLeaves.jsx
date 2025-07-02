@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Card from '../components/Card';
 import { Loader2, AlertTriangle, CalendarClock } from 'lucide-react';
 
-const PendingLeaves = ({ userData }) => {
+const PendingLeaves = ({ userData, setUserData }) => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,7 +46,7 @@ const PendingLeaves = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar userData={userData} />
+      <Navbar setUserData={setUserData} userData={userData} />
 
       <div className="container mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">

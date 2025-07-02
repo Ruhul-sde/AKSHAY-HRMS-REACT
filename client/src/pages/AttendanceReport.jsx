@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -25,7 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 
-const AttendanceReport = ({ userData }) => {
+const AttendanceReport = ({ userData, setUserData }) => {
   const [month, setMonth] = useState(dayjs().format('YYYY-MM'));
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -202,7 +201,7 @@ const AttendanceReport = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Navbar userData={userData} />
+      <Navbar setUserData={setUserData} userData={userData} />
       
       <motion.div 
         variants={containerVariants}

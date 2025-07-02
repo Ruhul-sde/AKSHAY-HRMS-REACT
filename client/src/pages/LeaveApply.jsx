@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +19,7 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
-const LeaveApply = ({ userData }) => {
+const LeaveApply = ({ userData, setUserData }) => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [form, setForm] = useState({
     leaveType: '',
@@ -262,7 +261,7 @@ const LeaveApply = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Navbar userData={userData} />
+      <Navbar setUserData={setUserData} userData={userData} />
       
       <motion.div 
         className="max-w-4xl mx-auto px-4 py-8"

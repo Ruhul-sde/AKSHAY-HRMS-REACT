@@ -47,4 +47,4 @@ export function validateField(name, value) {
     default: break;
   }
   return errors;
-}
+} 

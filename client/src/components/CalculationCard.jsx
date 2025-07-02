@@ -59,4 +59,4 @@ const CalculationCard = ({ formData }) => (
   </div>
 );
 
-export default React.memo(CalculationCard);
+export default React.memo(CalculationCard); 

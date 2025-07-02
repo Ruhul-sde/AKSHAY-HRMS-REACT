@@ -52,11 +52,6 @@ const LoanApply = ({ userData, setUserData }) => {
     ls_Reason: '',
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Form data updated:', formData);
-  }, [formData]);
-
   // Fetch loan types
   const fetchLoanTypes = useCallback(async () => {
     setLoading(true);
@@ -64,8 +59,6 @@ const LoanApply = ({ userData, setUserData }) => {
     
     try {
       const res = await axios.get('http://localhost:5000/api/loan-types');
-      console.log('Loan types API response:', res.data);
-      
       if (res.data?.success && res.data.loanTypes?.length > 0) {
         setLoanTypes(res.data.loanTypes);
       } else {
@@ -86,7 +79,6 @@ const LoanApply = ({ userData, setUserData }) => {
   // Handle form changes
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    console.log(`Field changed: ${name} = ${value}`);
     
     setFormErrors(prev => ({ ...prev, [name]: undefined }));
 
@@ -97,7 +89,6 @@ const LoanApply = ({ userData, setUserData }) => {
         const selected = loanTypes.find(lt => lt.ls_NAME === value);
         if (selected) {
           updated.ls_Intrst = selected.ls_Intrst || selected.ls_INTRST || '0';
-          console.log('Selected loan type:', selected);
         }
       }
 
@@ -105,13 +96,11 @@ const LoanApply = ({ userData, setUserData }) => {
         const amount = parseFloat(updated.ls_ReqAmnt) || 0;
         const emiCount = parseInt(updated.ls_NoOfEmi) || 0;
         const interest = parseFloat(updated.ls_Intrst) || 0;
-        console.log(`Calculating EMI with amount: ${amount}, months: ${emiCount}, interest: ${interest}`);
 
         if (amount > 0 && emiCount > 0 && interest >= 0) {
           const result = calculateEMI(amount, interest, emiCount);
-          console.log('EMI Calculation Result:', result);
-          updated.ls_FinlAmnt = result.finalAmount || '0.00';
-          updated.ls_EmiAmnt = result.emi || '0.00';
+          updated.ls_FinlAmnt = result.finalAmount;
+          updated.ls_EmiAmnt = result.emi;
         } else {
           updated.ls_FinlAmnt = '0.00';
           updated.ls_EmiAmnt = '0.00';
@@ -136,18 +125,12 @@ const LoanApply = ({ userData, setUserData }) => {
     let errors = {};
 
     requiredFields.forEach(field => {
-      const error = validateField(field, formData[field]);
-      console.log(`Validating ${field}:`, error);
-      
-      // Ensure we only store string errors, not objects
-      if (error && typeof error === 'string') {
-        errors[field] = error;
-      } else if (error && error[field]) {
-        errors[field] = error[field];
+      const fieldErrors = validateField(field, formData[field]);
+      if (fieldErrors && fieldErrors[field]) {
+        errors[field] = fieldErrors[field]; // Only store the string, not the object
       }
     });
 
-    console.log('Form validation errors:', errors);
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   }, [formData]);
@@ -155,21 +138,15 @@ const LoanApply = ({ userData, setUserData }) => {
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submission started');
     
-    if (!validateForm()) {
-      console.log('Form validation failed');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     setSuccessMessage('');
     setError('');
 
     if (!userData?.ls_EMPCODE) {
-      const errorMsg = 'Employee data not available. Please log in again.';
-      console.error(errorMsg);
-      setError(errorMsg);
+      setError('Employee data not available. Please log in again.');
       setIsSubmitting(false);
       return;
     }
@@ -189,15 +166,10 @@ const LoanApply = ({ userData, setUserData }) => {
         ls_Reason: formData.ls_Reason.trim(),
       };
 
-      console.log('Submitting payload:', payload);
       const res = await axios.post('http://localhost:5000/api/apply-loan', payload);
-      console.log('Submission response:', res.data);
 
       if (res.data?.success) {
-        const successMsg = res.data.message || 'Loan application submitted successfully!';
-        console.log(successMsg);
-        setSuccessMessage(successMsg);
-        
+        setSuccessMessage(res.data.message || 'Loan application submitted successfully!');
         // Reset form
         setFormData({
           ls_LoanTyp: '',
@@ -212,32 +184,25 @@ const LoanApply = ({ userData, setUserData }) => {
         setFormErrors({});
         setActiveStep(1);
       } else {
-        const errorMsg = res.data?.message || 'Failed to submit loan application.';
-        console.error(errorMsg);
-        setError(errorMsg);
+        setError(res.data?.message || 'Failed to submit loan application.');
       }
     } catch (err) {
       console.error('Loan submission error:', err);
-      
-      let errorMsg = 'An unexpected error occurred.';
       if (err.response?.status === 400) {
-        errorMsg = err.response.data?.message || 'Invalid application data.';
+        setError(err.response.data?.message || 'Invalid application data.');
       } else if (err.response?.status === 500) {
-        errorMsg = 'Server error. Please try again later.';
+        setError('Server error. Please try again later.');
       } else if (err.request) {
-        errorMsg = 'Network error. Please check your connection.';
+        setError('Network error. Please check your connection.');
+      } else {
+        setError('An unexpected error occurred.');
       }
-      
-      console.error(errorMsg);
-      setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const renderStep = (step) => {
-    console.log(`Rendering step ${step}`);
-    
     switch(step) {
       case 1:
         return (

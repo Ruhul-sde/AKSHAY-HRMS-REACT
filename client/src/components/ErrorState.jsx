@@ -22,4 +22,4 @@ const ErrorState = ({ error, onRetry }) => (
   </div>
 );
 
-export default React.memo(ErrorState);
+export default React.memo(ErrorState); 
