@@ -99,12 +99,14 @@ const LeaveApply = ({ userData, setUserData }) => {
       }
     }
 
-    if (name === 'date' && ['fullDay', 'halfDay'].includes(form.dayType)) {
+    // Handle date changes for full day and half day
+    if (name === 'date' && ['fullDay', 'halfDay'].includes(updated.dayType)) {
       updated.fromDate = value;
       updated.toDate = value;
     }
 
-    if ((name === 'fromDate' || name === 'toDate') && form.dayType === 'multiDay') {
+    // Handle date changes for multi-day
+    if ((name === 'fromDate' || name === 'toDate') && updated.dayType === 'multiDay') {
       if (updated.fromDate && updated.toDate) {
         const start = dayjs(updated.fromDate);
         const end = dayjs(updated.toDate);
@@ -130,13 +132,6 @@ const LeaveApply = ({ userData, setUserData }) => {
     if (form.dayType === 'multiDay' && (!form.fromDate || !form.toDate)) {
       setError('Please select both start and end dates');
       return false;
-    }
-
-    if (['fullDay', 'halfDay'].includes(form.dayType) && form.date) {
-      if (!form.fromDate || !form.toDate) {
-        setError('Date validation error');
-        return false;
-      }
     }
 
     if (form.dayType === 'halfDay' && (!form.fromTime || !form.toTime)) {
@@ -232,48 +227,13 @@ const LeaveApply = ({ userData, setUserData }) => {
     return 1;
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.4, ease: "easeOut" }
-    }
-  };
-
-  const stepVariants = {
-    hidden: { opacity: 0, x: 20 },
-    visible: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -20 }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar setUserData={setUserData} userData={userData} />
       
-      <motion.div 
-        className="max-w-4xl mx-auto px-4 py-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header Section */}
-        <motion.div 
-          variants={cardVariants}
-          className="text-center mb-8"
-        >
+        <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl">
               <FileText className="w-8 h-8 text-white" />
@@ -290,19 +250,15 @@ const LeaveApply = ({ userData, setUserData }) => {
           <div className="flex items-center justify-center gap-2 mt-6">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <motion.div
+                <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                     getStepProgress() >= step
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                       : 'bg-gray-200 text-gray-500'
                   }`}
-                  animate={{
-                    scale: getStepProgress() >= step ? 1.1 : 1,
-                  }}
-                  transition={{ duration: 0.2 }}
                 >
                   {getStepProgress() >= step ? <CheckCircle className="w-5 h-5" /> : step}
-                </motion.div>
+                </div>
                 {step < 3 && (
                   <div className={`w-12 h-1 mx-2 rounded transition-all duration-300 ${
                     getStepProgress() > step ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-200'
@@ -317,7 +273,7 @@ const LeaveApply = ({ userData, setUserData }) => {
             <span className={getStepProgress() >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}>Duration</span>
             <span className={getStepProgress() >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}>Review</span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Alert Messages */}
         <AnimatePresence>
@@ -351,16 +307,10 @@ const LeaveApply = ({ userData, setUserData }) => {
         </AnimatePresence>
 
         {/* Main Form Card */}
-        <motion.div 
-          variants={cardVariants}
-          className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden"
-        >
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
             {/* Step 1: Leave Type Selection */}
-            <motion.div 
-              variants={stepVariants}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-100 rounded-xl">
                   <User className="w-5 h-5 text-blue-600" />
@@ -393,16 +343,11 @@ const LeaveApply = ({ userData, setUserData }) => {
                   <ArrowRight className="w-5 h-5 text-gray-400 rotate-90" />
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Step 2: Duration Type Selection */}
             {form.leaveType && (
-              <motion.div 
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-6"
-              >
+              <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-purple-100 rounded-xl">
                     <CalendarDays className="w-5 h-5 text-purple-600" />
@@ -415,14 +360,12 @@ const LeaveApply = ({ userData, setUserData }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Full Day Option */}
-                  <motion.label 
+                  <label 
                     className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
                       form.dayType === 'fullDay' 
                         ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <input
                       type="radio"
@@ -443,17 +386,15 @@ const LeaveApply = ({ userData, setUserData }) => {
                     <h4 className="font-semibold text-gray-800 mb-1">Full Day</h4>
                     <p className="text-sm text-gray-500">Complete day off</p>
                     <div className="mt-3 text-xs font-medium text-blue-600">1 day</div>
-                  </motion.label>
+                  </label>
 
                   {/* Half Day Option */}
-                  <motion.label 
+                  <label 
                     className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
                       form.dayType === 'halfDay' 
                         ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-100' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <input
                       type="radio"
@@ -474,17 +415,15 @@ const LeaveApply = ({ userData, setUserData }) => {
                     <h4 className="font-semibold text-gray-800 mb-1">Half Day</h4>
                     <p className="text-sm text-gray-500">Custom time range</p>
                     <div className="mt-3 text-xs font-medium text-purple-600">≤ 0.5 day</div>
-                  </motion.label>
+                  </label>
 
                   {/* Multi-Day Option */}
-                  <motion.label 
+                  <label 
                     className={`group relative flex flex-col p-6 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
                       form.dayType === 'multiDay' 
                         ? 'border-green-500 bg-green-50 shadow-lg shadow-green-100' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <input
                       type="radio"
@@ -505,19 +444,14 @@ const LeaveApply = ({ userData, setUserData }) => {
                     <h4 className="font-semibold text-gray-800 mb-1">Multi-Day</h4>
                     <p className="text-sm text-gray-500">Extended leave</p>
                     <div className="mt-3 text-xs font-medium text-green-600">Multiple days</div>
-                  </motion.label>
+                  </label>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Step 3: Date and Time Selection */}
             {form.leaveType && form.dayType && (
-              <motion.div 
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-6"
-              >
+              <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-green-100 rounded-xl">
                     <Clock className="w-5 h-5 text-green-600" />
@@ -566,18 +500,14 @@ const LeaveApply = ({ userData, setUserData }) => {
                       </div>
                     </div>
                     {form.fromTime && form.toTime && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4 p-3 bg-white border border-purple-200 rounded-xl"
-                      >
+                      <div className="mt-4 p-3 bg-white border border-purple-200 rounded-xl">
                         <div className="flex items-center gap-2">
                           <Info className="w-4 h-4 text-purple-600" />
                           <p className="text-sm font-medium text-purple-800">
                             Half day from {form.fromTime} to {form.toTime}
                           </p>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -634,11 +564,7 @@ const LeaveApply = ({ userData, setUserData }) => {
                 {/* Summary Card */}
                 {((form.dayType === 'multiDay' && form.fromDate && form.toDate) || 
                   (['fullDay', 'halfDay'].includes(form.dayType) && form.date)) && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6"
-                  >
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <Sparkles className="w-5 h-5 text-blue-600" />
                       <h4 className="font-semibold text-gray-800">Leave Summary</h4>
@@ -657,6 +583,14 @@ const LeaveApply = ({ userData, setUserData }) => {
                            form.dayType === 'halfDay' ? 'Half Day' : 'Multi-Day'}
                         </span>
                       </div>
+                      {form.dayType === 'fullDay' && form.date && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Date:</span>
+                          <span className="font-semibold text-gray-800">
+                            {dayjs(form.date).format('MMMM D, YYYY')}
+                          </span>
+                        </div>
+                      )}
                       {form.dayType === 'halfDay' && form.fromTime && form.toTime && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">Time:</span>
@@ -665,20 +599,23 @@ const LeaveApply = ({ userData, setUserData }) => {
                           </span>
                         </div>
                       )}
+                      {form.dayType === 'multiDay' && form.fromDate && form.toDate && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Dates:</span>
+                          <span className="font-semibold text-gray-800">
+                            {dayjs(form.fromDate).format('MMM D')} - {dayjs(form.toDate).format('MMM D, YYYY')}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* Reason Section */}
             {form.leaveType && form.dayType && (
-              <motion.div 
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-orange-100 rounded-xl">
                     <MessageSquare className="w-5 h-5 text-orange-600" />
@@ -696,34 +633,23 @@ const LeaveApply = ({ userData, setUserData }) => {
                   rows="4"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-200 resize-none"
                 />
-              </motion.div>
+              </div>
             )}
 
             {/* Submit Button */}
             {form.leaveType && form.dayType && (
-              <motion.div
-                variants={stepVariants}
-                initial="hidden"
-                animate="visible"
-                className="pt-6"
-              >
-                <motion.button
+              <div className="pt-6">
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className={`w-full group relative overflow-hidden py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-300 ${
                     isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
                   }`}
-                  whileHover={!isSubmitting ? { scale: 1.02 } : {}}
-                  whileTap={!isSubmitting ? { scale: 0.98 } : {}}
                 >
                   <div className="flex items-center justify-center gap-3">
                     {isSubmitting ? (
                       <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                        />
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Processing Application...
                       </>
                     ) : (
@@ -733,20 +659,12 @@ const LeaveApply = ({ userData, setUserData }) => {
                       </>
                     )}
                   </div>
-                  
-                  {/* Animated background */}
-                  {!isSubmitting && (
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      initial={false}
-                    />
-                  )}
-                </motion.button>
-              </motion.div>
+                </button>
+              </div>
             )}
           </form>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };
