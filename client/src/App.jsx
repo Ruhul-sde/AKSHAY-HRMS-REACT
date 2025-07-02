@@ -18,21 +18,21 @@ const RequireAuth = ({ user, children }) => {
 function App() {
   const [userData, setUserData] = useState(null);
 
-  // On mount, load user data from localStorage
+  // On mount, load user data from sessionStorage (expires when browser closes)
   useEffect(() => {
-    const storedUser = localStorage.getItem('userData');
+    const storedUser = sessionStorage.getItem('userData');
     if (storedUser) {
       setUserData(JSON.parse(storedUser));
     }
   }, []);
 
-  // Persist user data to localStorage whenever it changes
+  // Persist user data to sessionStorage whenever it changes
   useEffect(() => {
     if (userData) {
-      localStorage.setItem('userData', JSON.stringify(userData));
+      sessionStorage.setItem('userData', JSON.stringify(userData));
       localStorage.setItem('empCode', userData?.ls_EMPCODE || '');
     } else {
-      localStorage.removeItem('userData');
+      sessionStorage.removeItem('userData');
       localStorage.removeItem('empCode');
     }
   }, [userData]);
