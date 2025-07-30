@@ -1,7 +1,7 @@
 const BASE_URL = "http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc";
 const axiosConfig = {
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000
+  timeout: 30000
 };
 
 const handleApiError = (res, error, defaultMessage = "API request failed") => {
