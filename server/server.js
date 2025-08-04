@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 
 // Root route - avoid "Cannot GET /"
 app.get('/', (req, res) => {
-    res.send('Backend server is running');
+    res.send('Backend server is running in port 5000');
 });
 
 // API routes

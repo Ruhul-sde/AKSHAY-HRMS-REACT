@@ -150,7 +150,13 @@ const Navbar = ({ setUserData, userData }) => {
             open={reportOpen}
             setOpen={setReportOpen}
             items={[
-              { label: 'Attendance Report', to: '/attendance-report' },
+              { label: 'Leave Report', to: '/leave-report' },
+              { label: 'Pay Structure Report', to: '/pay-structure-report' },
+              { label: 'Annual Summary Report', to: '/annual-summary-report' },
+              { label: 'Monthly Attendance Report', to: '/monthly-attendance-report' },
+              { label: 'Loan Report', to: '/loan-report' },
+              { label: 'FulNFinal Report', to: '/fulnfinal-report' },
+              { label: 'Employee Details Report', to: '/employee-details-report' },
             ]}
           />
 
@@ -306,7 +312,13 @@ const Navbar = ({ setUserData, userData }) => {
                 <MobileDropdown
                   label="Reports"
                   items={[
-                    { label: 'Attendance Report', to: '/attendance-report' },
+                    { label: 'Leave Report', to: '/leave-report' },
+                    { label: 'Pay Structure Report', to: '/pay-structure-report' },
+                    { label: 'Annual Summary Report', to: '/annual-summary-report' },
+                    { label: 'Monthly Attendance Report', to: '/monthly-attendance-report' },
+                    { label: 'Loan Report', to: '/loan-report' },
+                    { label: 'FulNFinal Report', to: '/fulnfinal-report' },
+                    { label: 'Employee Details Report', to: '/employee-details-report' },
                   ]}
                   setMenuOpen={setMenuOpen}
                 />
@@ -403,7 +415,7 @@ const Dropdown = ({ label, items, open, setOpen }) => (
         <ChevronDown size={16} className="mt-0.5" />
       </motion.span>
     </motion.button>
-    
+
     <AnimatePresence>
       {open && (
         <motion.div
@@ -470,7 +482,7 @@ const MobileNavItem = ({ to, children, setMenuOpen }) => (
 // Enhanced Mobile Dropdown
 const MobileDropdown = ({ label, items, setMenuOpen }) => {
   const [open, setOpen] = useState(false);
-  
+
   return (
     <li>
       <motion.button
@@ -486,7 +498,7 @@ const MobileDropdown = ({ label, items, setMenuOpen }) => {
           <ChevronDown size={16} />
         </motion.span>
       </motion.button>
-      
+
       <AnimatePresence>
         {open && (
           <motion.div

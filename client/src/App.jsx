@@ -105,7 +105,7 @@ function App() {
       />
 
       <Route
-        path="/attendance-report"
+        path="/reports"
         element={
           <RequireAuth user={userData}>
             <AttendanceReport userData={userData} setUserData={setUserData} />
