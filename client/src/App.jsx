@@ -8,7 +8,7 @@ import ChangePassword from './pages/ChangePassword';
 import LeaveHistory from './pages/LeaveHistory';
 import PendingLeaves from './pages/PendingLeaves';
 import LoanApply from './pages/LoanApply';
-import AttendanceReport from './pages/AttendanceReport';
+import MonthlyAttendanceReport from './pages/MonthlyAttendanceReport';
 import Help from './pages/Help';
 
 const RequireAuth = ({ user, children }) => {
@@ -105,10 +105,10 @@ function App() {
       />
 
       <Route
-        path="/reports"
+        path="/monthly-attendance-report"
         element={
           <RequireAuth user={userData}>
-            <AttendanceReport userData={userData} setUserData={setUserData} />
+            <MonthlyAttendanceReport userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />
