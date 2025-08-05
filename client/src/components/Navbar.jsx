@@ -4,6 +4,27 @@ import { ChevronDown, Menu, X, User, Settings, LogOut, Bell, Info } from 'lucide
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
 
+const dropdownItems = {
+  leave: [
+    { label: 'Apply for Leave', to: '/apply-leave', icon: '📝' },
+    { label: 'Leave History', to: '/leave-history', icon: '🕒' },
+    { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
+  ],
+  loan: [
+    { label: 'Apply for Loan', to: '/apply-loan', icon: '💰' },
+    { label: 'Loan Status', to: '/loan-status', icon: '📊' },
+  ],
+  reports: [
+    { label: 'Leave Report', to: '/leave-report', icon: '📑' },
+    { label: 'Pay Structure Report', to: '/pay-structure-report', icon: '💵' },
+    { label: 'Annual Summary Report', to: '/annual-summary-report', icon: '📈' },
+    { label: 'Monthly Attendance Report', to: '/monthly-attendance-report', icon: '🗓️' },
+    { label: 'Loan Report', to: '/loan-report', icon: '📋' },
+    { label: 'FulNFinal Report', to: '/fulnfinal-report', icon: '🏁' },
+    { label: 'Employee Details Report', to: '/employee-details-report', icon: '👥' },
+  ]
+};
+
 // Animation variants (moved outside component to be accessible by child components)
 const dropdownVariants = {
   hidden: { 
@@ -128,36 +149,21 @@ const Navbar = ({ setUserData, userData }) => {
             label="Leave"
             open={leaveOpen}
             setOpen={setLeaveOpen}
-            items={[
-              { label: 'Apply for Leave', to: '/apply-leave' },
-              { label: 'Leave History', to: '/leave-history' },
-              { label: 'Pending Leaves', to: '/pending-leaves' },
-            ]}
+            items={dropdownItems.leave}
           />
 
           <Dropdown
             label="Loan"
             open={loanOpen}
             setOpen={setLoanOpen}
-            items={[
-              { label: 'Apply for Loan', to: '/apply-loan' },
-              { label: 'Loan Status', to: '/loan-status' },
-            ]}
+            items={dropdownItems.loan}
           />
 
           <Dropdown
             label="Reports"
             open={reportOpen}
             setOpen={setReportOpen}
-            items={[
-              { label: 'Leave Report', to: '/leave-report' },
-              { label: 'Pay Structure Report', to: '/pay-structure-report' },
-              { label: 'Annual Summary Report', to: '/annual-summary-report' },
-              { label: 'Monthly Attendance Report', to: '/monthly-attendance-report' },
-              { label: 'Loan Report', to: '/loan-report' },
-              { label: 'FulNFinal Report', to: '/fulnfinal-report' },
-              { label: 'Employee Details Report', to: '/employee-details-report' },
-            ]}
+            items={dropdownItems.reports}
           />
 
           {/* Notifications Icon */}
@@ -292,34 +298,19 @@ const Navbar = ({ setUserData, userData }) => {
 
                 <MobileDropdown
                   label="Leave"
-                  items={[
-                    { label: 'Apply for Leave', to: '/apply-leave' },
-                    { label: 'Leave History', to: '/leave-history' },
-                    { label: 'Pending Leaves', to: '/pending-leaves' },
-                  ]}
+                  items={dropdownItems.leave}
                   setMenuOpen={setMenuOpen}
                 />
 
                 <MobileDropdown
                   label="Loan"
-                  items={[
-                    { label: 'Apply for Loan', to: '/apply-loan' },
-                    { label: 'Loan Status', to: '/loan-status' },
-                  ]}
+                  items={dropdownItems.loan}
                   setMenuOpen={setMenuOpen}
                 />
 
                 <MobileDropdown
                   label="Reports"
-                  items={[
-                    { label: 'Leave Report', to: '/leave-report' },
-                    { label: 'Pay Structure Report', to: '/pay-structure-report' },
-                    { label: 'Annual Summary Report', to: '/annual-summary-report' },
-                    { label: 'Monthly Attendance Report', to: '/monthly-attendance-report' },
-                    { label: 'Loan Report', to: '/loan-report' },
-                    { label: 'FulNFinal Report', to: '/fulnfinal-report' },
-                    { label: 'Employee Details Report', to: '/employee-details-report' },
-                  ]}
+                  items={dropdownItems.reports}
                   setMenuOpen={setMenuOpen}
                 />
 
@@ -425,35 +416,23 @@ const Dropdown = ({ label, items, open, setOpen }) => (
           exit="hidden"
           className="absolute left-0 top-full bg-white shadow-xl rounded-2xl mt-2 p-2 z-50 min-w-[200px] border border-gray-100/50 backdrop-blur-sm"
         >
-          {items.map((item, i) =>
-            item.to ? (
-              <motion.div key={i} whileHover={{ x: 4 }}>
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `block px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-blue-50/80 text-blue-600'
-                        : 'hover:bg-gray-50/80 hover:text-blue-500'
-                    } ${item.className || ''}`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </motion.div>
-            ) : (
-              <motion.button
-                key={i}
-                onClick={item.onClick}
-                className={`block w-full text-left px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                  item.className || 'hover:bg-gray-50/80 hover:text-blue-500'
-                }`}
-                whileHover={{ x: 4 }}
+          {items.map((item, i) => (
+            <motion.div key={i} whileHover={{ x: 4 }}>
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-50/80 text-blue-600'
+                      : 'hover:bg-gray-50/80 hover:text-blue-500'
+                  }`
+                }
               >
+                <span className="mr-2">{item.icon}</span>
                 {item.label}
-              </motion.button>
-            )
-          )}
+              </NavLink>
+            </motion.div>
+          ))}
         </motion.div>
       )}
     </AnimatePresence>
@@ -508,36 +487,24 @@ const MobileDropdown = ({ label, items, setMenuOpen }) => {
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="pl-6 space-y-1 overflow-hidden"
           >
-            {items.map((item, i) =>
-              item.to ? (
-                <motion.div key={i} whileTap={{ scale: 0.98 }}>
-                  <NavLink
-                    to={item.to}
-                    onClick={() => setMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-blue-50/80 text-blue-600'
-                          : 'hover:bg-gray-50/80 hover:text-blue-500'
-                      } ${item.className || ''}`
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                </motion.div>
-              ) : (
-                <motion.button
-                  key={i}
-                  onClick={item.onClick}
-                  className={`block w-full text-left px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                    item.className || 'hover:bg-gray-50/80 hover:text-blue-500'
-                  }`}
-                  whileTap={{ scale: 0.98 }}
+            {items.map((item, i) => (
+              <motion.div key={i} whileTap={{ scale: 0.98 }}>
+                <NavLink
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-blue-50/80 text-blue-600'
+                        : 'hover:bg-gray-50/80 hover:text-blue-500'
+                    }`
+                  }
                 >
+                  <span className="mr-2">{item.icon}</span>
                   {item.label}
-                </motion.button>
-              )
-            )}
+                </NavLink>
+              </motion.div>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

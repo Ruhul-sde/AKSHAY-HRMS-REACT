@@ -10,6 +10,14 @@ import PendingLeaves from './pages/PendingLeaves';
 import LoanApply from './pages/LoanApply';
 import MonthlyAttendanceReport from './pages/MonthlyAttendanceReport';
 import Help from './pages/Help';
+import Profile from './pages/Profile';
+import Allowance from './pages/Allowance';
+import LeaveReport from './pages/reports/Leave Report';
+import PayStructureReport from './pages/reports/Pay Structure Report';
+import AnnualSummaryReport from './pages/reports/Annual Summary Report';
+import LoanReport from './pages/reports/Loan Report';
+import FulNFinalReport from './pages/reports/FulNFinal Report';
+import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -118,6 +126,78 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <Help userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth user={userData}>
+            <Profile userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/allowance"
+        element={
+          <RequireAuth user={userData}>
+            <Allowance userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/leave-report"
+        element={
+          <RequireAuth user={userData}>
+            <LeaveReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/pay-structure-report"
+        element={
+          <RequireAuth user={userData}>
+            <PayStructureReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/annual-summary-report"
+        element={
+          <RequireAuth user={userData}>
+            <AnnualSummaryReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/loan-report"
+        element={
+          <RequireAuth user={userData}>
+            <LoanReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/fulnfinal-report"
+        element={
+          <RequireAuth user={userData}>
+            <FulNFinalReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/employee-details-report"
+        element={
+          <RequireAuth user={userData}>
+            <EmployeeDetailsReport userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

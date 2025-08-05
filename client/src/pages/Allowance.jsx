@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Clock, Sparkles } from 'lucide-react';
-import Navbar from '../../components/Navbar';
+import { Coins, Sparkles, Clock } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
-const LeaveReport = ({ userData, setUserData }) => {
+const Allowance = ({ userData, setUserData }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
       <Navbar setUserData={setUserData} userData={userData} />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
@@ -21,9 +21,9 @@ const LeaveReport = ({ userData, setUserData }) => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8"
+              className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8"
             >
-              <FileText className="w-12 h-12 text-white" />
+              <Coins className="w-12 h-12 text-white" />
             </motion.div>
             
             <motion.h1
@@ -32,14 +32,14 @@ const LeaveReport = ({ userData, setUserData }) => {
               transition={{ delay: 0.4 }}
               className="text-4xl font-bold text-gray-800 mb-4"
             >
-              Leave Report
+              Allowance Management
             </motion.h1>
             
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex items-center justify-center gap-2 text-2xl font-semibold text-purple-600 mb-6"
+              className="flex items-center justify-center gap-2 text-2xl font-semibold text-green-600 mb-6"
             >
               <Sparkles className="w-8 h-8" />
               Coming Soon
@@ -52,8 +52,8 @@ const LeaveReport = ({ userData, setUserData }) => {
               transition={{ delay: 0.8 }}
               className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto"
             >
-              We're working hard to bring you comprehensive leave reporting features. 
-              This page will include detailed analytics, trends, and insights about your leave patterns.
+              Manage your allowances, view travel reimbursements, medical benefits, 
+              and other compensation components all in one comprehensive dashboard.
             </motion.p>
             
             <motion.div
@@ -72,4 +72,4 @@ const LeaveReport = ({ userData, setUserData }) => {
   );
 };
 
-export default LeaveReport;
+export default Allowance;
