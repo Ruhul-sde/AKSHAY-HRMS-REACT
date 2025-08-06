@@ -49,14 +49,22 @@ const OutDuty = ({ userData, setUserData }) => {
           reject,
           {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
+            timeout: 15000,
+            maximumAge: 300000
           }
         );
       });
 
       const { latitude, longitude } = position.coords;
+      console.log('Got coordinates:', { latitude, longitude });
       
+      // Always set coordinates first
+      setCurrentLocation({
+        latitude,
+        longitude,
+        address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+      });
+
       // Get address from coordinates
       try {
         const response = await api.post('/reverse-geocode', {
@@ -64,43 +72,67 @@ const OutDuty = ({ userData, setUserData }) => {
           longitude
         });
         
-        if (response.data.success) {
-          setCurrentLocation({
-            latitude,
-            longitude,
-            address: response.data.address
-          });
+        if (response.data.success && response.data.address) {
+          const locationName = response.data.address;
+          setCurrentLocation(prev => ({
+            ...prev,
+            address: locationName
+          }));
           setFormData(prev => ({
             ...prev,
-            ls_Location: response.data.address,
-            ls_LocManual: response.data.address
+            ls_Location: locationName,
+            ls_LocManual: locationName
           }));
+          
+          setMessage({
+            type: 'success',
+            text: 'Location fetched successfully'
+          });
         } else {
-          throw new Error('Failed to get address');
+          // Use coordinates as fallback
+          setFormData(prev => ({
+            ...prev,
+            ls_Location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+            ls_LocManual: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          }));
+          
+          setMessage({
+            type: 'warning',
+            text: 'Location coordinates obtained, but address lookup failed'
+          });
         }
       } catch (reverseGeocodeError) {
-        // If reverse geocoding fails, still use coordinates
-        setCurrentLocation({
-          latitude,
-          longitude,
-          address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-        });
+        console.error('Reverse geocoding failed:', reverseGeocodeError);
+        // Use coordinates as fallback
         setFormData(prev => ({
           ...prev,
           ls_Location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
           ls_LocManual: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
         }));
+        
+        setMessage({
+          type: 'warning',
+          text: 'Location coordinates obtained, but address lookup failed'
+        });
       }
 
-      setMessage({
-        type: 'success',
-        text: 'Location fetched successfully'
-      });
     } catch (error) {
       console.error('Location error:', error);
+      let errorMessage = 'Failed to get current location. ';
+      
+      if (error.code === 1) {
+        errorMessage += 'Please allow location access and try again.';
+      } else if (error.code === 2) {
+        errorMessage += 'Location unavailable. Please check your device settings.';
+      } else if (error.code === 3) {
+        errorMessage += 'Location request timed out. Please try again.';
+      } else {
+        errorMessage += 'Please enable location services and try again.';
+      }
+      
       setMessage({
         type: 'error',
-        text: error.message || 'Failed to get current location. Please enable location services.'
+        text: errorMessage
       });
     } finally {
       setLocationLoading(false);
@@ -111,7 +143,7 @@ const OutDuty = ({ userData, setUserData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!currentLocation) {
+    if (!currentLocation || !currentLocation.latitude || !currentLocation.longitude) {
       setMessage({
         type: 'error',
         text: 'Please fetch your current location first'
@@ -310,6 +342,8 @@ const OutDuty = ({ userData, setUserData }) => {
                     className={`p-4 rounded-lg mb-4 flex items-center gap-2 ${
                       message.type === 'success' 
                         ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : message.type === 'warning'
+                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                         : 'bg-red-100 text-red-700 border border-red-200'
                     }`}
                   >

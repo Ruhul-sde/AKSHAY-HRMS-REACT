@@ -90,6 +90,8 @@ router.post('/out-duty', async (req, res) => {
 router.post('/reverse-geocode', async (req, res) => {
   const { latitude, longitude } = req.body;
 
+  console.log('Reverse geocode request:', { latitude, longitude });
+
   if (!latitude || !longitude) {
     return res.status(400).json({
       success: false,
@@ -101,7 +103,10 @@ router.post('/reverse-geocode', async (req, res) => {
     // Note: You'll need to add GOOGLE_MAPS_API_KEY to your environment variables
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
     
+    console.log('Google Maps API Key exists:', !!googleMapsApiKey);
+    
     if (!googleMapsApiKey) {
+      console.warn('Google Maps API key not configured');
       return res.status(500).json({
         success: false,
         message: "Google Maps API key not configured"
@@ -113,16 +118,40 @@ router.post('/reverse-geocode', async (req, res) => {
     );
 
     if (response.data.status === 'OK' && response.data.results.length > 0) {
-      const address = response.data.results[0].formatted_address;
+      const result = response.data.results[0];
+      
+      // Try to get a more meaningful location name
+      let locationName = result.formatted_address;
+      
+      // Look for establishment, point_of_interest, or premise first
+      const preferredTypes = ['establishment', 'point_of_interest', 'premise', 'subpremise'];
+      for (const component of result.address_components) {
+        if (component.types.some(type => preferredTypes.includes(type))) {
+          locationName = component.long_name + ', ' + result.formatted_address.split(',').slice(-2).join(',');
+          break;
+        }
+      }
+      
+      // If no specific place found, use the formatted address but clean it up
+      if (locationName === result.formatted_address) {
+        // Remove postal codes and country codes for cleaner display
+        locationName = result.formatted_address
+          .replace(/\b\d{5,6}\b/g, '') // Remove postal codes
+          .replace(/,\s*[A-Z]{2,3}$/g, '') // Remove country codes at the end
+          .replace(/,\s+,/g, ',') // Remove double commas
+          .trim();
+      }
+      
       return res.json({
         success: true,
-        address,
-        data: response.data.results[0]
+        address: locationName,
+        fullAddress: result.formatted_address,
+        data: result
       });
     } else {
       return res.status(400).json({
         success: false,
-        message: "Unable to fetch address for the provided coordinates"
+        message: "Unable to fetch location name from Google Maps API"
       });
     }
   } catch (err) {
