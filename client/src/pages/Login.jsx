@@ -207,26 +207,25 @@ function Login({ setUserData }) {
             </motion.div>
           )}
 
-          <motion.button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 flex justify-center items-center gap-2 shadow-lg hover:shadow-blue-500/30 relative overflow-hidden group"
-            whileTap={{ scale: 0.98 }}
-            disabled={loading}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <span className="relative z-10">
-              {loading ? (
-                <>
-                  <FaSpinner className="animate-spin" /> Logging In...
-                </>
-              ) : (
-                'Login'
-              )}
-            </span>
-            <span className="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition duration-300 transform -translate-x-full group-hover:translate-x-0"></span>
-          </motion.button>
+<motion.button
+  type="submit"
+  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 flex justify-center items-center gap-2 shadow-lg hover:shadow-blue-500/30 relative overflow-hidden group"
+  whileTap={{ scale: 0.98 }}
+  disabled={loading}
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.5 }}
+>
+  {loading ? (
+    <div className="flex items-center gap-2">
+      <span>Logging In...</span>
+      <FaSpinner className="animate-spin" />
+    </div>
+  ) : (
+    'Login'
+  )}
+  <span className="absolute inset-0 bg-white/10 group-hover:bg-white/20 transition duration-300 transform -translate-x-full group-hover:translate-x-0"></span>
+</motion.button>
         </form>
 
         <motion.div 
