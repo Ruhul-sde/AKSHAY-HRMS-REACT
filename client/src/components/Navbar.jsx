@@ -8,7 +8,7 @@ const dropdownItems = {
   leave: [
     { label: 'Apply for Leave', to: '/apply-leave', icon: '📝' },
     { label: 'Leave History', to: '/leave-history', icon: '🕒' },
-    { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
+    // { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
   ],
   loan: [
     { label: 'Apply for Loan', to: '/apply-loan', icon: '💰' },
