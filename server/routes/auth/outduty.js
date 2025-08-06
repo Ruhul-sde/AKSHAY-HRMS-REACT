@@ -160,4 +160,41 @@ router.post('/reverse-geocode', async (req, res) => {
   }
 });
 
+// GET LATEST OUT-DUTY DATA
+router.get('/latest-out-duty', async (req, res) => {
+  const { empCode, date } = req.query;
+
+  if (!empCode || !date) {
+    return res.status(400).json({
+      success: false,
+      message: "Employee code and date are required"
+    });
+  }
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/GetLatestOutDuty?EmpCode=${empCode}&Date=${date}`
+    );
+
+    console.log('Latest out-duty API response:', JSON.stringify(response.data, null, 2));
+
+    if (response.data && response.data.lst_ClsLatestOutDutyDtls) {
+      return res.json({
+        success: true,
+        message: "Latest out-duty data fetched successfully",
+        data: response.data.lst_ClsLatestOutDutyDtls
+      });
+    } else {
+      return res.json({
+        success: true,
+        message: "No out-duty data found",
+        data: []
+      });
+    }
+  } catch (err) {
+    console.error('Latest out-duty API error:', err);
+    return handleApiError(res, err, "Failed to fetch latest out-duty data");
+  }
+});
+
 module.exports = router;
