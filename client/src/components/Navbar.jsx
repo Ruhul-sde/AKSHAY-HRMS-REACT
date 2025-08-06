@@ -159,6 +159,8 @@ const Navbar = ({ setUserData, userData }) => {
             items={dropdownItems.loan}
           />
 
+          <NavItem to="/allowance">Allowance</NavItem>
+
           <Dropdown
             label="Reports"
             open={reportOpen}
@@ -307,6 +309,8 @@ const Navbar = ({ setUserData, userData }) => {
                   items={dropdownItems.loan}
                   setMenuOpen={setMenuOpen}
                 />
+
+                <MobileNavItem to="/allowance" setMenuOpen={setMenuOpen}>Allowance</MobileNavItem>
 
                 <MobileDropdown
                   label="Reports"

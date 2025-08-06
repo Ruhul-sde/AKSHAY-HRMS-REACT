@@ -19,6 +19,7 @@ import LoanReport from './pages/reports/Loan Report';
 import FulNFinalReport from './pages/reports/FulNFinal Report';
 import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 import OutDuty from './pages/OutDuty';
+import Settings from './pages/Settings';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -208,6 +209,15 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <OutDuty userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <RequireAuth user={userData}>
+            <Settings userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

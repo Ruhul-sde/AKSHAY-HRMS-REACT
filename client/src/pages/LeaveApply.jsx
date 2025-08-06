@@ -81,7 +81,14 @@ const LeaveApply = ({ userData, setUserData }) => {
       };
     }
 
-    // Calculate half day duration based on time
+    // Auto-set dates for full day leave
+    if (name === 'date' && updated.dayType === 'fullDay') {
+      updated.fromDate = value;
+      updated.toDate = value;
+      updated.numDays = 1;
+    }
+
+    // Calculate half day duration
     if ((name === 'fromTime' || name === 'toTime') && form.dayType === 'halfDay') {
       if (updated.fromTime && updated.toTime) {
         const [fh, fm] = updated.fromTime.split(':').map(Number);
@@ -97,12 +104,6 @@ const LeaveApply = ({ userData, setUserData }) => {
           updated.numDays = Math.min(duration / 480, 0.5);
         }
       }
-    }
-
-    // Handle date changes for full day and half day
-    if (name === 'date' && ['fullDay', 'halfDay'].includes(updated.dayType)) {
-      updated.fromDate = value;
-      updated.toDate = value;
     }
 
     // Handle date changes for multi-day

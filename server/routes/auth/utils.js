@@ -1,7 +1,10 @@
-const BASE_URL = "http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc";
+
+require('dotenv').config();
+
+const BASE_URL = process.env.BASE_URL;
 const axiosConfig = {
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000
+  timeout: parseInt(process.env.API_TIMEOUT)
 };
 
 const handleApiError = (res, error, defaultMessage = "API request failed") => {
@@ -16,4 +19,4 @@ const handleApiError = (res, error, defaultMessage = "API request failed") => {
   });
 };
 
-module.exports = { BASE_URL, axiosConfig, handleApiError }; 
+module.exports = { BASE_URL, axiosConfig, handleApiError };
