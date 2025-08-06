@@ -82,7 +82,7 @@ const Dashboard = ({ userData, setUserData }) => {
   const quickActions = [
     { icon: FileText, label: 'Apply for Leave', path: '/apply-leave', color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50' },
     { icon: History, label: 'Leave History', path: '/leave-history', color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50' },
-    // { icon: BarChart3, label: 'Attendance Report', path: '/attendance-report', color: 'from-green-500 to-green-600', bg: 'bg-green-50' },
+    { icon: MapPin, label: 'Out-Duty Tracking', path: '/out-duty', color: 'from-green-500 to-green-600', bg: 'bg-green-50' },
     { icon: Banknote, label: 'Apply for Loan', path: '/apply-loan', color: 'from-orange-500 to-orange-600', bg: 'bg-orange-50' },
     { icon: Lock, label: 'Change Password', path: '/change-password', color: 'from-red-500 to-red-600', bg: 'bg-red-50' },
   ];

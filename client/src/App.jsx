@@ -18,6 +18,7 @@ import AnnualSummaryReport from './pages/reports/Annual Summary Report';
 import LoanReport from './pages/reports/Loan Report';
 import FulNFinalReport from './pages/reports/FulNFinal Report';
 import EmployeeDetailsReport from './pages/reports/Employee Details Report';
+import OutDuty from './pages/OutDuty';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -198,6 +199,15 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <EmployeeDetailsReport userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/out-duty"
+        element={
+          <RequireAuth user={userData}>
+            <OutDuty userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

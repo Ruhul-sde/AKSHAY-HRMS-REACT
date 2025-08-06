@@ -5,6 +5,7 @@ const loanRoutes = require('./loan');
 const passwordRoutes = require('./password');
 const attendanceRoutes = require('./attendance');
 const employeeRoutes = require('./employee');
+const outdutyRoutes = require('./outduty');
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use(loanRoutes);
 router.use(passwordRoutes);
 router.use(attendanceRoutes);
 router.use(employeeRoutes);
+router.use('/', outdutyRoutes);
 
-module.exports = router; 
+module.exports = router;
