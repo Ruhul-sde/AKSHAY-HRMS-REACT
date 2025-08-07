@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -29,6 +28,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Settings = ({ userData, setUserData }) => {
   const [activeSection, setActiveSection] = useState('profile');
@@ -37,22 +37,22 @@ const Settings = ({ userData, setUserData }) => {
     displayName: userData?.ls_EMPNAME || '',
     email: userData?.ls_Email || '',
     phone: userData?.ls_Mobile || '',
-    
+
     // Appearance Settings
     theme: localStorage.getItem('theme') || 'light',
     accentColor: localStorage.getItem('accentColor') || 'blue',
     language: localStorage.getItem('language') || 'en',
-    
+
     // Notification Settings
     emailNotifications: JSON.parse(localStorage.getItem('emailNotifications') || 'true'),
     pushNotifications: JSON.parse(localStorage.getItem('pushNotifications') || 'true'),
     leaveReminders: JSON.parse(localStorage.getItem('leaveReminders') || 'true'),
     soundEnabled: JSON.parse(localStorage.getItem('soundEnabled') || 'true'),
-    
+
     // Privacy Settings
     profileVisibility: localStorage.getItem('profileVisibility') || 'team',
     showOnlineStatus: JSON.parse(localStorage.getItem('showOnlineStatus') || 'true'),
-    
+
     // Security Settings
     twoFactorEnabled: false,
     sessionTimeout: localStorage.getItem('sessionTimeout') || '30',
@@ -65,15 +65,15 @@ const Settings = ({ userData, setUserData }) => {
   // Save settings to localStorage
   const saveSettings = async () => {
     setIsLoading(true);
-    
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Save to localStorage
     Object.keys(settings).forEach(key => {
       localStorage.setItem(key, JSON.stringify(settings[key]));
     });
-    
+
     setIsLoading(false);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
@@ -271,6 +271,7 @@ const Settings = ({ userData, setUserData }) => {
           )}
         </AnimatePresence>
       </motion.div>
+      <Footer />
     </div>
   );
 };

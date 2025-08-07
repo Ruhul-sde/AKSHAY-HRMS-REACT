@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -25,6 +24,7 @@ import {
   Settings
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Profile = ({ userData, setUserData }) => {
   const [activeTab, setActiveTab] = useState('personal');
@@ -227,6 +227,7 @@ const Profile = ({ userData, setUserData }) => {
           </motion.div>
         </AnimatePresence>
       </motion.div>
+      <Footer />
     </div>
   );
 };

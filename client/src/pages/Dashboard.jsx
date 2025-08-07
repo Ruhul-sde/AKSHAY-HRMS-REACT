@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -31,6 +30,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import api from '../api';
+import Footer from '../components/Footer'; // Assuming Footer component is in ../components/Footer
 
 const Dashboard = ({ userData, setUserData }) => {
   const navigate = useNavigate();
@@ -57,12 +57,12 @@ const Dashboard = ({ userData, setUserData }) => {
   useEffect(() => {
     const fetchLatestOutDuty = async () => {
       if (!userData?.ls_EMPCODE) return;
-      
+
       setOutDutyLoading(true);
       try {
         const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const response = await api.get(`/latest-out-duty?empCode=${userData.ls_EMPCODE}&date=${currentDate}`);
-        
+
         if (response.data.success) {
           setLatestOutDuty(response.data.data || []);
         }
@@ -164,7 +164,7 @@ const Dashboard = ({ userData, setUserData }) => {
           <div className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
           <div className="absolute bottom-3 left-3 w-8 h-8 bg-white/10 rounded-full"></div>
-          
+
           <div className="relative z-10">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex-1">
@@ -190,7 +190,7 @@ const Dashboard = ({ userData, setUserData }) => {
                   Welcome to your personalized HR dashboard
                 </motion.p>
               </div>
-              
+
               {/* Enhanced Time Display */}
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -310,14 +310,14 @@ const Dashboard = ({ userData, setUserData }) => {
                         <p className="text-xs text-gray-600 font-medium">{formatApiTime(duty.ls_Time)}</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <OutDutyDetail icon={Building2} label="Client" value={duty.ls_ClientNm} />
                       <OutDutyDetail icon={MapPin} label="Location" value={duty.ls_Location} />
                       <OutDutyDetail icon={FileText} label="Reason" value={duty.ls_ReasonVisit} />
                       <OutDutyDetail icon={MessageSquare} label="Manual Location" value={duty.ls_LocManual} />
                     </div>
-                    
+
                     {duty.ls_Remark && (
                       <div className="mt-3 p-3 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-100">
                         <p className="text-xs text-gray-700 font-medium">
@@ -389,8 +389,9 @@ const Dashboard = ({ userData, setUserData }) => {
           </motion.div>
         </div>
 
-        
+
       </motion.main>
+      <Footer />
     </div>
   );
 };

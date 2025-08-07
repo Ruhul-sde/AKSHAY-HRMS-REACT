@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ChevronDown, Menu, X, User, Settings, LogOut, Bell, Info } from 'lucide-react';
+import { ChevronDown, Menu, X, User, Settings, LogOut, Bell, Info, Calendar, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.png';
 
@@ -161,6 +161,8 @@ const Navbar = ({ setUserData, userData }) => {
 
           <NavItem to="/allowance">Allowance</NavItem>
 
+          <NavItem to="/attendance">Attendance</NavItem>
+
           <Dropdown
             label="Reports"
             open={reportOpen}
@@ -264,10 +266,16 @@ const Navbar = ({ setUserData, userData }) => {
                       label="My Profile"
                     />
                     <ProfileMenuItem
+                      to="/holiday-master"
+                      icon={<Calendar size={16} />}
+                      label="Holiday Master"
+                    />
+                    <ProfileMenuItem
                       to="/settings"
                       icon={<Settings size={16} />}
                       label="Settings"
                     />
+                    
                     <motion.button
                       onClick={handleLogout}
                       className="flex items-center w-full px-4 py-2.5 text-sm rounded-xl text-red-600 hover:bg-red-50/80 transition-all duration-200"
@@ -312,6 +320,8 @@ const Navbar = ({ setUserData, userData }) => {
 
                 <MobileNavItem to="/allowance" setMenuOpen={setMenuOpen}>Allowance</MobileNavItem>
 
+                <MobileNavItem to="/attendance" setMenuOpen={setMenuOpen}>Attendance</MobileNavItem>
+
                 <MobileDropdown
                   label="Reports"
                   items={dropdownItems.reports}
@@ -328,10 +338,15 @@ const Navbar = ({ setUserData, userData }) => {
                     <User size={18} className="mr-3" />
                     Profile
                   </MobileNavItem>
+                  <MobileNavItem to="/holiday-master" setMenuOpen={setMenuOpen}>
+                    <Calendar size={18} className="mr-3" />
+                    Holiday Master
+                  </MobileNavItem>
                   <MobileNavItem to="/settings" setMenuOpen={setMenuOpen}>
                     <Settings size={18} className="mr-3" />
                     Settings
                   </MobileNavItem>
+                  
                   <motion.button
                     onClick={handleLogout}
                     className="flex items-center w-full px-4 py-3 rounded-xl text-red-600 hover:bg-red-50/80 transition-all duration-200"

@@ -16,6 +16,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import api from '../api';
 
 const OutDuty = ({ userData, setUserData }) => {

@@ -12,6 +12,7 @@ import MonthlyAttendanceReport from './pages/MonthlyAttendanceReport';
 import Help from './pages/Help';
 import Profile from './pages/Profile';
 import Allowance from './pages/Allowance';
+import Attendance from './pages/Attendance';
 import LeaveReport from './pages/reports/Leave Report';
 import PayStructureReport from './pages/reports/Pay Structure Report';
 import AnnualSummaryReport from './pages/reports/Annual Summary Report';
@@ -20,6 +21,8 @@ import FulNFinalReport from './pages/reports/FulNFinal Report';
 import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 import OutDuty from './pages/OutDuty';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import HolidayMaster from './pages/HolidayMaster';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -133,6 +136,15 @@ function App() {
       />
 
       <Route
+        path="/attendance"
+        element={
+          <RequireAuth user={userData}>
+            <Attendance userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
         path="/profile"
         element={
           <RequireAuth user={userData}>
@@ -218,6 +230,24 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <Settings userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/privacy-policy"
+        element={
+          <RequireAuth user={userData}>
+            <PrivacyPolicy userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/holiday-master"
+        element={
+          <RequireAuth user={userData}>
+            <HolidayMaster userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

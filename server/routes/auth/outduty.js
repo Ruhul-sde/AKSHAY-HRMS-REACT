@@ -197,4 +197,42 @@ router.get('/latest-out-duty', async (req, res) => {
   }
 });
 
+// GET OUT-DUTY HISTORY
+router.get('/out-duty-history', async (req, res) => {
+  const { empCode, date } = req.query;
+
+  if (!empCode || !date) {
+    return res.status(400).json({
+      success: false,
+      message: "Employee code and date are required"
+    });
+  }
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/GetOutDuty?EmpCode=${empCode}&Date=${date}`,
+      axiosConfig
+    );
+
+    console.log('Out-duty history API response:', JSON.stringify(response.data, null, 2));
+
+    if (response.data && response.data.lst_ClsOutDutyDtls) {
+      return res.json({
+        success: true,
+        message: "Out-duty history fetched successfully",
+        data: response.data.lst_ClsOutDutyDtls
+      });
+    } else {
+      return res.json({
+        success: true,
+        message: "No out-duty history found",
+        data: []
+      });
+    }
+  } catch (err) {
+    console.error('Out-duty history API error:', err);
+    return handleApiError(res, err, "Failed to fetch out-duty history");
+  }
+});
+
 module.exports = router;
