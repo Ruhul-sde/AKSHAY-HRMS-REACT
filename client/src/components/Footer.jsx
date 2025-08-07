@@ -133,8 +133,7 @@ const Footer = () => {
               >
                 <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
                 <span className="text-sm">
-                  123 Business Park, Tech City,<br />
-                  Innovation District, 12345
+                  Building 2, 214, MBP Rd, Sector I, MIDC Industrial Area, Sector 1, <br /> Mahape, Navi Mumbai, Maharashtra 400710
                 </span>
               </motion.div>
               
@@ -143,7 +142,7 @@ const Footer = () => {
                 className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-300"
               >
                 <Phone className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">+1 (555) 123-4567</span>
+                <span className="text-sm">022 6712 6060</span>
               </motion.div>
               
               <motion.div 
@@ -151,7 +150,7 @@ const Footer = () => {
                 className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-300"
               >
                 <Mail className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">support@akshayhrms.com</span>
+                <span className="text-sm">ruhul@akshay.com</span>
               </motion.div>
               
               <motion.div 
@@ -160,7 +159,7 @@ const Footer = () => {
               >
                 <Globe className="w-4 h-4 flex-shrink-0" />
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm">www.akshayhrms.com</span>
+                  <span className="text-sm">www.akshay.com</span>
                   <ExternalLink className="w-3 h-3" />
                 </div>
               </motion.div>
