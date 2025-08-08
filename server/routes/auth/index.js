@@ -6,15 +6,18 @@ const passwordRoutes = require('./password');
 const attendanceRoutes = require('./attendance');
 const employeeRoutes = require('./employee');
 const outdutyRoutes = require('./outduty');
+const holidayRoutes = require('./holiday');
 
 const router = express.Router();
 
-router.use(loginRoutes);
-router.use(leaveRoutes);
-router.use(loanRoutes);
-router.use(passwordRoutes);
-router.use(attendanceRoutes);
-router.use(employeeRoutes);
+// Use routes
+router.use('/', loginRoutes);
+router.use('/', employeeRoutes);
+router.use('/', leaveRoutes);
+router.use('/', passwordRoutes);
+router.use('/', attendanceRoutes);
+router.use('/', loanRoutes);
 router.use('/', outdutyRoutes);
+router.use('/', holidayRoutes);
 
 module.exports = router;

@@ -199,7 +199,7 @@ const Navbar = ({ setUserData, userData }) => {
                 >
                   {userData?.ls_EMPCODE ? (
                     <img 
-                      src={`http://localhost:5000/api/employee-image/${userData.ls_EMPCODE}`}
+                      src={`http://localhost:5000/api/employee-image?imagePath=${userData.ls_Picture || `/path/to/images/${userData.ls_EMPCODE}.jpg`}`}
                       alt="Profile" 
                       className="w-full h-full object-cover"
                       onError={(e) => {

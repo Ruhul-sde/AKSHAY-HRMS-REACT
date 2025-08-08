@@ -1,215 +1,137 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Sparkles, Clock, Gift } from 'lucide-react';
+import { 
+  Calendar, 
+  RefreshCw
+} from 'lucide-react';
+import axios from 'axios';
+import dayjs from 'dayjs';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const HolidayMaster = ({ userData, setUserData }) => {
-  const upcomingFeatures = [
-    {
-      icon: Calendar,
-      title: "Holiday Calendar",
-      description: "View all company holidays in a beautiful calendar format"
-    },
-    {
-      icon: Gift,
-      title: "Festival Management",
-      description: "Manage regional and cultural festivals with custom settings"
-    },
-    {
-      icon: Clock,
-      title: "Holiday Scheduling",
-      description: "Plan and schedule holidays for the entire year in advance"
+  const [holidayData, setHolidayData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch holiday data on component mount
+  useEffect(() => {
+    fetchHolidayData();
+  }, []);
+
+  const fetchHolidayData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('http://localhost:5000/api/holiday-report', {
+        params: {
+          ls_Branch: 'PUNE',
+          ls_FinYear: 'FY2025-26'
+        }
+      });
+
+      if (response.data?.success) {
+        setHolidayData(response.data.holidayData || []);
+      }
+    } catch (err) {
+      console.error('Error fetching holiday data:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const formatDate = (dateString) => {
+    return dayjs(dateString).format('DD MMM YYYY');
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar setUserData={setUserData} userData={userData} />
-      
-      <div className="max-w-5xl mx-auto px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center"
-        >
-          {/* Main Card */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-12 border border-gray-100/50">
-            {/* Animated Icon */}
-            <motion.div
-              initial={{ scale: 0, rotate: 180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ 
-                delay: 0.3, 
-                type: "spring", 
-                stiffness: 200,
-                duration: 0.8 
-              }}
-              className="relative mx-auto mb-8"
-            >
-              <div className="w-32 h-32 bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 rounded-full flex items-center justify-center shadow-2xl">
-                <Calendar className="w-16 h-16 text-white" />
-              </div>
-              {/* Floating sparkles */}
-              <motion.div
-                animate={{ 
-                  rotate: 360,
-                  scale: [1, 1.1, 1]
-                }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute -top-2 -right-2"
-              >
-                <Sparkles className="w-8 h-8 text-pink-400" />
-              </motion.div>
-              <motion.div
-                animate={{ 
-                  rotate: -360,
-                  scale: [1, 1.2, 1]
-                }}
-                transition={{ 
-                  duration: 3, 
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: 1
-                }}
-                className="absolute -bottom-2 -left-2"
-              >
-                <Sparkles className="w-6 h-6 text-purple-400" />
-              </motion.div>
-            </motion.div>
-            
-            {/* Title */}
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.6 }}
-              className="text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 bg-clip-text text-transparent mb-6"
-            >
-              Holiday Master
-            </motion.h1>
-            
-            {/* Coming Soon Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8, duration: 0.4 }}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full shadow-lg mb-8"
-            >
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Sparkles className="w-6 h-6" />
-              </motion.div>
-              <span className="text-xl font-semibold">Coming Soon</span>
-              <motion.div
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-              >
-                <Sparkles className="w-6 h-6" />
-              </motion.div>
-            </motion.div>
-            
-            {/* Description */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 0.6 }}
-              className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed"
-            >
-              Manage company holidays, festivals, and special occasions with our comprehensive 
-              holiday management system. Plan ahead and keep your team informed about upcoming celebrations.
-            </motion.p>
 
-            {/* Features Grid */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.6 }}
-              className="grid md:grid-cols-3 gap-8 mb-12"
-            >
-              {upcomingFeatures.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.4 + index * 0.1, duration: 0.5 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100/50 hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-3">{feature.title}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-            
-            {/* Launch Timeline */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.8, duration: 0.6 }}
-              className="flex items-center justify-center gap-3 text-gray-500 bg-gray-50/80 backdrop-blur-sm px-6 py-4 rounded-xl border border-gray-200/50"
-            >
-              <Clock className="w-5 h-5" />
-              <span className="font-medium">Expected Launch: Q2 2025</span>
-            </motion.div>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Holiday Master</h1>
+          <p className="text-gray-600">View company holidays</p>
+        </div>
 
-            {/* Progress Bar */}
-            <motion.div
-              initial={{ opacity: 0, scaleX: 0 }}
-              animate={{ opacity: 1, scaleX: 1 }}
-              transition={{ delay: 2, duration: 1 }}
-              className="mt-8 bg-gray-200 h-2 rounded-full overflow-hidden"
-            >
-              <motion.div
-                initial={{ width: "0%" }}
-                animate={{ width: "35%" }}
-                transition={{ delay: 2.2, duration: 1.5, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-              />
-            </motion.div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 3.5, duration: 0.4 }}
-              className="text-sm text-gray-500 mt-2"
-            >
-              Development Progress: 35% Complete
-            </motion.p>
+        {/* Actions Bar */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-sm text-gray-600">
+            Total Holidays: <span className="font-semibold text-gray-900">{holidayData.length}</span>
           </div>
 
-          {/* Additional Info Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.2, duration: 0.6 }}
-            className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 text-white"
+          <button
+            onClick={fetchHolidayData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            <h3 className="text-xl font-bold mb-3">Stay Updated</h3>
-            <p className="text-purple-100 mb-4">
-              Be the first to know when Holiday Master goes live. We'll notify all users via email.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-all duration-200 shadow-lg"
-            >
-              Get Notified
-            </motion.button>
-          </motion.div>
-        </motion.div>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Holidays List */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          {loading ? (
+            <div className="p-12 text-center">
+              <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Loading holidays...</p>
+            </div>
+          ) : holidayData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Holiday Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {holidayData.map((holiday, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {holiday.holidayName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                          {formatDate(holiday.holidayDate)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          {holiday.holidayType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 max-w-md truncate">
+                          {holiday.description}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No holidays found</h3>
+              <p className="text-gray-500">No holidays available for the current period.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <Footer />

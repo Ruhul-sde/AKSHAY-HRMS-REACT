@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -21,50 +22,85 @@ import {
   ChevronRight,
   Download,
   Share2,
-  Settings
+  Settings,
+  FileText,
+  Home,
+  Building,
+  UserCheck,
+  Hash,
+  Banknote,
+  IdCard,
+  Users
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const Profile = ({ userData, setUserData }) => {
   const [activeTab, setActiveTab] = useState('personal');
-  const [isEditing, setIsEditing] = useState(false);
   const [profileStats, setProfileStats] = useState({
-    completionPercentage: 85,
-    yearsOfService: 3.5,
-    totalProjects: 24,
-    rating: 4.8
+    completionPercentage: 0,
+    yearsOfService: 0,
+    totalProjects: 24
   });
 
-  // Calculate profile completion
+  // Calculate profile completion and years of service
   useEffect(() => {
-    const fields = [
-      userData?.ls_EMPNAME,
-      userData?.ls_Email,
-      userData?.ls_Mobile,
-      userData?.ls_BirthDate,
-      userData?.ls_Gender,
-      userData?.ls_EMPTYPE,
-      userData?.ls_Department
-    ];
-    const filledFields = fields.filter(field => field && field !== 'N/A').length;
-    const completion = Math.round((filledFields / fields.length) * 100);
-    setProfileStats(prev => ({ ...prev, completionPercentage: completion }));
+    if (userData) {
+      const fields = [
+        userData?.ls_EMPNAME,
+        userData?.ls_Email,
+        userData?.ls_Mobile,
+        userData?.ls_BirthDate,
+        userData?.ls_Gender,
+        userData?.ls_EMPTYPE,
+        userData?.ls_Department,
+        userData?.ls_Designation,
+        userData?.ls_JoinDate,
+        userData?.ls_Adhar,
+        userData?.ls_PANNO,
+        userData?.ls_PFNO
+      ];
+      const filledFields = fields.filter(field => field && field !== 'N/A' && field !== '').length;
+      const completion = Math.round((filledFields / fields.length) * 100);
+      
+      // Calculate years of service
+      let yearsOfService = 0;
+      if (userData?.ls_JoinDate) {
+        const joinDate = new Date(userData.ls_JoinDate.split(' ')[0].split('-').reverse().join('-'));
+        const currentDate = new Date();
+        yearsOfService = ((currentDate - joinDate) / (1000 * 60 * 60 * 24 * 365)).toFixed(1);
+      }
+      
+      setProfileStats(prev => ({ 
+        ...prev, 
+        completionPercentage: completion,
+        yearsOfService: parseFloat(yearsOfService)
+      }));
+    }
   }, [userData]);
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr.split(' ')[0]);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+    if (!dateStr || dateStr === '') return 'Not provided';
+    try {
+      // Handle DD-MM-YYYY format
+      const parts = dateStr.split(' ')[0].split('-');
+      if (parts.length === 3) {
+        const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        return date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+      }
+    } catch (error) {
+      return dateStr;
+    }
+    return dateStr;
   };
 
   const getProfilePicture = () => {
     if (userData?.ls_EMPCODE) {
-      return `http://localhost:5000/api/employee-image?imagePath=/path/to/images/${userData.ls_EMPCODE}.jpg`;
+      return `http://localhost:5000/api/employee-image?imagePath=${userData.ls_Picture || `/path/to/images/${userData.ls_EMPCODE}.jpg`}`;
     }
     return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face";
   };
@@ -73,7 +109,8 @@ const Profile = ({ userData, setUserData }) => {
     { id: 'personal', label: 'Personal Info', icon: User },
     { id: 'professional', label: 'Professional', icon: Briefcase },
     { id: 'contact', label: 'Contact', icon: Mail },
-    { id: 'documents', label: 'Documents', icon: CreditCard }
+    { id: 'address', label: 'Address', icon: MapPin },
+    { id: 'documents', label: 'Documents', icon: FileText }
   ];
 
   const containerVariants = {
@@ -97,27 +134,12 @@ const Profile = ({ userData, setUserData }) => {
     }
   };
 
-  const glowVariants = {
-    animate: {
-      boxShadow: [
-        "0 0 20px rgba(59, 130, 246, 0.3)",
-        "0 0 40px rgba(59, 130, 246, 0.6)",
-        "0 0 20px rgba(59, 130, 246, 0.3)"
-      ],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navbar setUserData={setUserData} userData={userData} />
 
       <motion.div 
-        className="max-w-6xl mx-auto px-4 sm:px-6 py-8"
+        className="max-w-7xl mx-auto px-4 sm:px-6 py-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -150,6 +172,13 @@ const Profile = ({ userData, setUserData }) => {
                     }}
                   />
                 </motion.div>
+                <motion.div 
+                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full border-4 border-white flex items-center justify-center"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </motion.div>
               </div>
 
               {/* Profile Info */}
@@ -168,13 +197,31 @@ const Profile = ({ userData, setUserData }) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.7 }}
                 >
-                  {userData?.ls_Department || 'Department'} • {userData?.ls_EMPTYPE || 'Employee Type'}
+                  {userData?.ls_Designation || 'Designation'} • {userData?.ls_Department || 'Department'}
                 </motion.p>
 
-                {/* Employee ID Badge */}
-                <div className="inline-flex items-center px-4 py-2 bg-blue-500/20 rounded-full border border-blue-500/30">
-                  <CreditCard className="w-4 h-4 text-blue-400 mr-2" />
-                  <span className="text-blue-300 text-sm">ID: {userData?.ls_EMPCODE || 'N/A'}</span>
+                {/* Employee Details */}
+                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                  <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full border border-blue-200">
+                    <CreditCard className="w-4 h-4 text-blue-600 mr-2" />
+                    <span className="text-blue-700 text-sm font-medium">ID: {userData?.ls_EMPCODE || 'N/A'}</span>
+                  </div>
+                  <div className="inline-flex items-center px-4 py-2 bg-green-50 rounded-full border border-green-200">
+                    <Calendar className="w-4 h-4 text-green-600 mr-2" />
+                    <span className="text-green-700 text-sm font-medium">{profileStats.yearsOfService} years</span>
+                  </div>
+                  <div className="inline-flex items-center px-4 py-2 bg-purple-50 rounded-full border border-purple-200">
+                    <Users className="w-4 h-4 text-purple-600 mr-2" />
+                    <span className="text-purple-700 text-sm font-medium">{userData?.ls_ManagerName || 'Manager'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-1 gap-4 lg:gap-6">
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                  <div className="text-2xl font-bold text-blue-600">{profileStats.completionPercentage}%</div>
+                  <div className="text-sm text-blue-700">Profile Complete</div>
                 </div>
               </div>
             </div>
@@ -194,7 +241,7 @@ const Profile = ({ userData, setUserData }) => {
                   <motion.button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-medium ${
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all font-medium text-sm ${
                       activeTab === tab.id
                         ? 'bg-blue-600 text-white shadow-md'
                         : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
@@ -202,8 +249,8 @@ const Profile = ({ userData, setUserData }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </motion.button>
                 );
               })}
@@ -221,8 +268,9 @@ const Profile = ({ userData, setUserData }) => {
             transition={{ duration: 0.3 }}
           >
             {activeTab === 'personal' && <PersonalInfo userData={userData} formatDate={formatDate} />}
-            {activeTab === 'professional' && <ProfessionalInfo userData={userData} />}
+            {activeTab === 'professional' && <ProfessionalInfo userData={userData} formatDate={formatDate} />}
             {activeTab === 'contact' && <ContactInfo userData={userData} />}
+            {activeTab === 'address' && <AddressInfo userData={userData} />}
             {activeTab === 'documents' && <DocumentsInfo userData={userData} />}
           </motion.div>
         </AnimatePresence>
@@ -238,36 +286,46 @@ const PersonalInfo = ({ userData, formatDate }) => (
     <InfoCard title="Basic Information" icon={User}>
       <InfoItem icon={User} label="Full Name" value={userData?.ls_EMPNAME} />
       <InfoItem icon={Calendar} label="Date of Birth" value={formatDate(userData?.ls_BirthDate)} />
-      <InfoItem icon={Activity} label="Gender" value={userData?.ls_Gender} />
-      <InfoItem icon={CreditCard} label="Employee Code" value={userData?.ls_EMPCODE} />
+      <InfoItem icon={Activity} label="Gender" value={userData?.ls_Gender === 'M' ? 'Male' : userData?.ls_Gender === 'F' ? 'Female' : userData?.ls_Gender} />
+      <InfoItem icon={Heart} label="Blood Group" value={userData?.ls_BloodGrp || 'Not provided'} />
     </InfoCard>
 
-    <InfoCard title="Additional Details" icon={Heart}>
-      <InfoItem icon={MapPin} label="Address" value="123 Main Street, City" />
-      <InfoItem icon={Shield} label="Blood Group" value="O+" />
-      <InfoItem icon={Phone} label="Emergency Contact" value="+1 (555) 123-4567" />
-      <InfoItem icon={Calendar} label="Joining Date" value="January 15, 2021" />
+    <InfoCard title="Identity Information" icon={IdCard}>
+      <InfoItem icon={Hash} label="Aadhaar Number" value={userData?.ls_Adhar || 'Not provided'} />
+      <InfoItem icon={Banknote} label="PAN Number" value={userData?.ls_PANNO || 'Not provided'} />
+      <InfoItem icon={Shield} label="Employee Code" value={userData?.ls_EMPCODE} />
+      <InfoItem icon={Calendar} label="Financial Year" value={userData?.ls_FinYear} />
     </InfoCard>
   </div>
 );
 
 // Professional Info Tab
-const ProfessionalInfo = ({ userData }) => (
+const ProfessionalInfo = ({ userData, formatDate }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <InfoCard title="Employment Details" icon={Briefcase}>
       <InfoItem icon={Building2} label="Department" value={userData?.ls_Department} />
       <InfoItem icon={Briefcase} label="Employee Type" value={userData?.ls_EMPTYPE} />
-      <InfoItem icon={Award} label="Designation" value="Senior Developer" />
-      <InfoItem icon={User} label="Reporting Manager" value="John Smith" />
+      <InfoItem icon={Award} label="Designation" value={userData?.ls_Designation || 'Not specified'} />
+      <InfoItem icon={Calendar} label="Joining Date" value={formatDate(userData?.ls_JoinDate)} />
     </InfoCard>
 
-    <InfoCard title="Skills & Certifications" icon={Award}>
-      <div className="space-y-3">
-        <SkillBar skill="React Development" percentage={90} />
-        <SkillBar skill="Node.js" percentage={85} />
-        <SkillBar skill="Database Design" percentage={80} />
-        <SkillBar skill="Project Management" percentage={75} />
-      </div>
+    <InfoCard title="Management & Branch" icon={Building}>
+      <InfoItem icon={User} label="Manager" value={userData?.ls_ManagerName || 'Not assigned'} />
+      <InfoItem icon={Hash} label="Manager ID" value={userData?.ls_Manager || 'Not provided'} />
+      <InfoItem icon={Building} label="Branch Name" value={userData?.ls_BrnchName || 'Not specified'} />
+      <InfoItem icon={Hash} label="Branch ID" value={userData?.ls_BrnchId || 'Not provided'} />
+    </InfoCard>
+
+    <InfoCard title="Government & Financial IDs" icon={FileText}>
+      <InfoItem icon={Shield} label="PF Number" value={userData?.ls_PFNO || 'Not provided'} />
+      <InfoItem icon={Hash} label="UAN Number" value={userData?.ls_UANNO || 'Not provided'} />
+      <InfoItem icon={CreditCard} label="ESIC Number" value={userData?.ls_ESICNO || 'Not provided'} />
+      <InfoItem icon={Calendar} label="Confirmation Date" value={formatDate(userData?.ls_CnfmDate) || 'Not confirmed'} />
+    </InfoCard>
+
+    <InfoCard title="Company Information" icon={Building2}>
+      <InfoItem icon={Building2} label="Company" value={userData?.ls_Company || 'Akshay Software Technologies'} />
+      <InfoItem icon={Camera} label="Profile Picture Path" value={userData?.ls_Picture ? 'Available' : 'Not provided'} />
     </InfoCard>
   </div>
 );
@@ -275,18 +333,36 @@ const ProfessionalInfo = ({ userData }) => (
 // Contact Info Tab
 const ContactInfo = ({ userData }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <InfoCard title="Contact Information" icon={Mail}>
-      <InfoItem icon={Mail} label="Email" value={userData?.ls_Email} />
-      <InfoItem icon={Phone} label="Mobile" value={userData?.ls_Mobile} />
-      <InfoItem icon={Phone} label="Office Phone" value="+1 (555) 987-6543" />
-      <InfoItem icon={MapPin} label="Office Location" value="Building A, Floor 5" />
+    <InfoCard title="Primary Contact" icon={Mail}>
+      <InfoItem icon={Mail} label="Email Address" value={userData?.ls_Email} />
+      <InfoItem icon={Phone} label="Mobile Number" value={userData?.ls_Mobile} />
+      <InfoItem icon={Phone} label="Emergency Contact" value={userData?.ls_EmrgncyCnt || 'Not provided'} />
     </InfoCard>
 
-    <InfoCard title="Social Links" icon={Share2}>
-      <InfoItem icon={Share2} label="LinkedIn" value="linkedin.com/in/employee" />
-      <InfoItem icon={Share2} label="GitHub" value="github.com/employee" />
-      <InfoItem icon={Share2} label="Portfolio" value="employee-portfolio.com" />
-      <InfoItem icon={Mail} label="Teams" value="employee@company.teams" />
+    <InfoCard title="Communication Preferences" icon={Settings}>
+      <InfoItem icon={Mail} label="Email Notifications" value="Enabled" />
+      <InfoItem icon={Phone} label="SMS Alerts" value="Enabled" />
+      <InfoItem icon={Activity} label="App Notifications" value="Enabled" />
+      <InfoItem icon={Clock} label="Preferred Contact Time" value="9 AM - 6 PM" />
+    </InfoCard>
+  </div>
+);
+
+// Address Info Tab
+const AddressInfo = ({ userData }) => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <InfoCard title="Home Address" icon={Home}>
+      <InfoItem icon={Building} label="Building/Street" value={userData?.ls_HomeBuild || 'Not provided'} />
+      <InfoItem icon={MapPin} label="City" value={userData?.ls_HomeCity || 'Not provided'} />
+      <InfoItem icon={MapPin} label="State" value={userData?.ls_HomeState || 'Not provided'} />
+      <InfoItem icon={Hash} label="Zip Code" value={userData?.ls_HomeZip || 'Not provided'} />
+    </InfoCard>
+
+    <InfoCard title="Work Address" icon={Building2}>
+      <InfoItem icon={Building} label="Building/Office" value={userData?.ls_WorkBuild || 'Not provided'} />
+      <InfoItem icon={MapPin} label="City" value={userData?.ls_WorkCity || 'Not provided'} />
+      <InfoItem icon={MapPin} label="State" value={userData?.ls_WorkState || 'Not provided'} />
+      <InfoItem icon={Hash} label="Zip Code" value={userData?.ls_WorkZip || 'Not provided'} />
     </InfoCard>
   </div>
 );
@@ -295,18 +371,44 @@ const ContactInfo = ({ userData }) => (
 const DocumentsInfo = ({ userData }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <InfoCard title="Identity Documents" icon={CreditCard}>
-      <DocumentItem name="Passport" status="Verified" date="Valid until 2030" />
-      <DocumentItem name="Driver's License" status="Verified" date="Valid until 2027" />
-      <DocumentItem name="National ID" status="Verified" date="Valid until 2029" />
+      <DocumentItem 
+        name="Aadhaar Card" 
+        status={userData?.ls_Adhar ? "Available" : "Not provided"} 
+        number={userData?.ls_Adhar ? `****${userData.ls_Adhar.slice(-4)}` : 'N/A'}
+      />
+      <DocumentItem 
+        name="PAN Card" 
+        status={userData?.ls_PANNO ? "Available" : "Not provided"} 
+        number={userData?.ls_PANNO || 'N/A'}
+      />
+      <DocumentItem 
+        name="Profile Picture" 
+        status={userData?.ls_Picture ? "Available" : "Not uploaded"} 
+        number={userData?.ls_Picture ? "Uploaded" : 'N/A'}
+      />
     </InfoCard>
 
     <InfoCard title="Employment Documents" icon={Briefcase}>
-      <DocumentItem name="Employment Contract" status="Active" date="Signed Jan 2021" />
-      <DocumentItem name="Tax Forms" status="Updated" date="Filed 2024" />
-      <DocumentItem name="Insurance Papers" status="Active" date="Valid 2024" />
+      <DocumentItem 
+        name="PF Account" 
+        status={userData?.ls_PFNO ? "Active" : "Not provided"} 
+        number={userData?.ls_PFNO || 'N/A'}
+      />
+      <DocumentItem 
+        name="UAN Account" 
+        status={userData?.ls_UANNO ? "Active" : "Not provided"} 
+        number={userData?.ls_UANNO || 'N/A'}
+      />
+      <DocumentItem 
+        name="ESIC Account" 
+        status={userData?.ls_ESICNO ? "Active" : "Not provided"} 
+        number={userData?.ls_ESICNO || 'N/A'}
+      />
     </InfoCard>
   </div>
 );
+
+
 
 // Reusable Components
 const InfoCard = ({ title, icon: Icon, children }) => (
@@ -334,39 +436,22 @@ const InfoItem = ({ icon: Icon, label, value }) => (
     </div>
     <div className="flex-1">
       <p className="text-gray-500 text-sm font-medium">{label}</p>
-      <p className="text-gray-800 font-semibold">{value || 'N/A'}</p>
+      <p className="text-gray-800 font-semibold">{value || 'Not provided'}</p>
     </div>
     <ChevronRight className="w-4 h-4 text-gray-400" />
   </div>
 );
 
-const SkillBar = ({ skill, percentage }) => (
-  <div className="space-y-2">
-    <div className="flex justify-between">
-      <span className="text-gray-800 font-medium">{skill}</span>
-      <span className="text-blue-600 font-semibold">{percentage}%</span>
-    </div>
-    <div className="w-full bg-gray-200 rounded-full h-3">
-      <motion.div 
-        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full"
-        initial={{ width: 0 }}
-        animate={{ width: `${percentage}%` }}
-        transition={{ duration: 1, delay: 0.5 }}
-      />
-    </div>
-  </div>
-);
-
-const DocumentItem = ({ name, status, date }) => (
+const DocumentItem = ({ name, status, number }) => (
   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
     <div>
       <p className="text-gray-800 font-semibold">{name}</p>
-      <p className="text-gray-500 text-sm">{date}</p>
+      <p className="text-gray-500 text-sm">{number}</p>
     </div>
     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-      status === 'Verified' || status === 'Active' 
+      status === 'Available' || status === 'Active' || status === 'Uploaded'
         ? 'bg-green-100 text-green-700' 
-        : 'bg-yellow-100 text-yellow-700'
+        : 'bg-red-100 text-red-700'
     }`}>
       {status}
     </span>

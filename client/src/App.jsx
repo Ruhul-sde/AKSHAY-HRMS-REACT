@@ -22,6 +22,7 @@ import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 import OutDuty from './pages/OutDuty';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import HolidayMaster from './pages/HolidayMaster';
 
 const RequireAuth = ({ user, children }) => {
@@ -239,6 +240,15 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <PrivacyPolicy userData={userData} setUserData={setUserData} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/terms-of-service"
+        element={
+          <RequireAuth user={userData}>
+            <TermsOfService userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
       />

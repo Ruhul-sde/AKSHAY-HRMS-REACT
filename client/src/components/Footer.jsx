@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   MapPin, 
   Phone, 
@@ -184,20 +185,22 @@ const Footer = () => {
           </div>
           
           <div className="flex items-center space-x-6 text-sm text-gray-400">
-            <motion.a
-              href="/privacy-policy"
-              whileHover={{ y: -1 }}
-              className="hover:text-blue-400 transition-colors duration-300"
-            >
-              Privacy Policy
-            </motion.a>
-            <motion.a
-              href="#"
-              whileHover={{ y: -1 }}
-              className="hover:text-blue-400 transition-colors duration-300"
-            >
-              Terms of Service
-            </motion.a>
+            <motion.div whileHover={{ y: -1 }}>
+              <Link
+                to="/privacy-policy"
+                className="hover:text-blue-400 transition-colors duration-300"
+              >
+                Privacy Policy
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ y: -1 }}>
+              <Link
+                to="/terms-of-service"
+                className="hover:text-blue-400 transition-colors duration-300"
+              >
+                Terms of Service
+              </Link>
+            </motion.div>
             <motion.a
               href="#"
               whileHover={{ y: -1 }}
