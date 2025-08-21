@@ -46,12 +46,20 @@ router.post('/allowance-apply', async (req, res) => {
       });
     }
     
+    // Log the incoming request
+    console.log('Allowance Apply Request:', JSON.stringify(req.body, null, 2));
+    
     const payload = {
       ls_MONTH,
       lst_ClsAllowenceApplyDtl
     };
     
-    const { data } = await axios.post(`${BASE_URL}/AllowenceApply`, payload, axiosConfig);
+    console.log('Sending to API:', JSON.stringify(payload, null, 2));
+    
+    const response = await axios.post(`${BASE_URL}/AllowenceApply`, payload, axiosConfig);
+    const { data } = response;
+    
+    console.log('API Response:', JSON.stringify(data, null, 2));
     
     if (data?.l_ClsErrorStatus?.ls_Status === "S") {
       return res.json({ 
@@ -60,12 +68,22 @@ router.post('/allowance-apply', async (req, res) => {
         data: data
       });
     } else {
+      console.error('API Error Status:', data?.l_ClsErrorStatus);
       return res.status(400).json({ 
         success: false, 
-        message: data?.l_ClsErrorStatus?.ls_Message || "Failed to apply allowance" 
+        message: data?.l_ClsErrorStatus?.ls_Message || "Failed to apply allowance",
+        apiResponse: data
       });
     }
   } catch (err) {
+    console.error('Allowance Apply Error:', err.response?.data || err.message);
+    if (err.response?.data) {
+      return res.status(400).json({
+        success: false,
+        message: err.response.data.l_ClsErrorStatus?.ls_Message || err.response.data.message || "Failed to apply allowance",
+        error: err.response.data
+      });
+    }
     return handleApiError(res, err, "Failed to apply allowance");
   }
 });
