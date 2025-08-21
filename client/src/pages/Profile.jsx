@@ -168,7 +168,7 @@ const Profile = ({ userData, setUserData }) => {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.onerror = null; 
-                      e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face";
+                      e.target.src = "https://images.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face";
                     }}
                   />
                 </motion.div>
