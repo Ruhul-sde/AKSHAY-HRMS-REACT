@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Coins, Sparkles, Clock, Plus, Trash2, Calendar, DollarSign, FileText, Upload, X, IndianRupee } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import api from '../api';
+import axios from 'axios';
 import dayjs from 'dayjs';
 
 const Allowance = ({ userData, setUserData }) => {
@@ -24,7 +24,7 @@ const Allowance = ({ userData, setUserData }) => {
   const fetchAllowanceTypes = async () => {
     try {
       setLoadingTypes(true);
-      const response = await api.get('/allowance-types');
+      const response = await axios.get('http://localhost:5000/api/allowance-types');
       if (response.data.success) {
         setAllowanceTypes(response.data.allowanceTypes);
       } else {
@@ -44,7 +44,7 @@ const Allowance = ({ userData, setUserData }) => {
       ls_EMPCODE: userData?.ls_EMPCODE || '',
       ls_EXTYPE: '',
       ls_APLYDATE: dayjs().format('YYYYMMDD'),
-      ld_AMT: 0,
+      ld_AMT: '',
       ls_REMARKS: '',
       lst_ClsAllowenceFileDtl: []
     };
@@ -70,7 +70,8 @@ const Allowance = ({ userData, setUserData }) => {
   const addFileToEntry = (entryIndex, file) => {
     const updated = [...allowanceEntries];
     const newFile = {
-      ls_FILEPATH: `D:\\Allowence\\${updated[entryIndex].ls_EXTYPE}\\${file.name}`,
+      file: file, // Store the actual file object
+      ls_FILEPATH: file.name, // Just store the filename for display
       ls_REMARKS: updated[entryIndex].ls_REMARKS || 'File attachment'
     };
     
@@ -95,9 +96,14 @@ const Allowance = ({ userData, setUserData }) => {
     }
 
     // Validate entries
-    for (let entry of allowanceEntries) {
-      if (!entry.ls_EXTYPE || !entry.ld_AMT || entry.ld_AMT <= 0) {
-        setError('Please fill all required fields for each entry');
+    for (let i = 0; i < allowanceEntries.length; i++) {
+      const entry = allowanceEntries[i];
+      if (!entry.ls_EXTYPE || !entry.ld_AMT || parseFloat(entry.ld_AMT) <= 0) {
+        setError(`Please fill all required fields for entry ${i + 1}`);
+        return;
+      }
+      if (!entry.ls_APLYDATE) {
+        setError(`Please select a date for entry ${i + 1}`);
         return;
       }
     }
@@ -107,22 +113,65 @@ const Allowance = ({ userData, setUserData }) => {
       setError('');
       setSuccess('');
 
-      const payload = {
-        ls_MONTH: selectedMonth,
-        lst_ClsAllowenceApplyDtl: allowanceEntries
-      };
+      // Create FormData for file uploads
+      const formData = new FormData();
+      
+      // Add basic form data
+      formData.append('ls_MONTH', selectedMonth);
 
-      const response = await api.post('/allowance-apply', payload);
+      // Process entries and add files
+      const processedEntries = allowanceEntries.map((entry, entryIndex) => {
+        const processedEntry = {
+          li_LineId: entry.li_LineId,
+          ls_EMPCODE: entry.ls_EMPCODE || userData?.ls_EMPCODE || '',
+          ls_EXTYPE: entry.ls_EXTYPE,
+          ls_APLYDATE: entry.ls_APLYDATE,
+          ld_AMT: parseFloat(entry.ld_AMT),
+          ls_REMARKS: entry.ls_REMARKS,
+          lst_ClsAllowenceFileDtl: []
+        };
+
+        // Handle files if they exist
+        if (entry.lst_ClsAllowenceFileDtl && entry.lst_ClsAllowenceFileDtl.length > 0) {
+          entry.lst_ClsAllowenceFileDtl.forEach((fileData, fileIndex) => {
+            if (fileData.file) {
+              // Add file to FormData
+              formData.append(`files_${entryIndex}_${fileIndex}`, fileData.file);
+              // Add file reference to entry
+              processedEntry.lst_ClsAllowenceFileDtl.push({
+                ls_FILEPATH: `files_${entryIndex}_${fileIndex}`, // Reference to FormData key
+                ls_REMARKS: fileData.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
+              });
+            }
+          });
+        }
+
+        return processedEntry;
+      });
+
+      // Add processed entries to FormData
+      formData.append('lst_ClsAllowenceApplyDtl', JSON.stringify(processedEntries));
+
+      console.log('Submitting allowance with files...');
+
+      const response = await axios.post('http://localhost:5000/api/allowance-apply', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       if (response.data.success) {
-        setSuccess('Allowance applied successfully!');
+        setSuccess(response.data.message || 'Allowance applied successfully!');
         setAllowanceEntries([]);
+        // Hide success message after 5 seconds
+        setTimeout(() => setSuccess(''), 5000);
       } else {
-        setError(response.data.message || 'Failed to apply allowance');
+        setError(response.data.message || 'Allowance application failed - please check your details and try again');
       }
     } catch (err) {
-      setError('Failed to submit allowance application');
-      console.error('Error submitting allowance:', err);
+      console.error('Allowance submission error:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'An unexpected error occurred during allowance submission.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -276,9 +325,9 @@ const Allowance = ({ userData, setUserData }) => {
                           type="number"
                           step="0.01"
                           value={entry.ld_AMT}
-                          onChange={(e) => updateEntry(index, 'ld_AMT', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => updateEntry(index, 'ld_AMT', e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="0.00"
+                          placeholder="Enter amount"
                           required
                         />
                       </div>
@@ -324,7 +373,7 @@ const Allowance = ({ userData, setUserData }) => {
                         <h4 className="text-sm font-medium text-gray-700">Attached Files:</h4>
                         {entry.lst_ClsAllowenceFileDtl.map((file, fileIndex) => (
                           <div key={fileIndex} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                            <span className="text-sm text-gray-600">{file.ls_FILEPATH.split('\\').pop()}</span>
+                            <span className="text-sm text-gray-600">{file.file ? file.file.name : file.ls_FILEPATH}</span>
                             <button
                               onClick={() => removeFileFromEntry(index, fileIndex)}
                               className="text-red-500 hover:text-red-700"
