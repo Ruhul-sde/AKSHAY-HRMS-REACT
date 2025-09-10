@@ -7,25 +7,63 @@ const router = express.Router();
 
 // GET HOLIDAY REPORT
 router.get('/holiday-report', async (req, res) => {
-  const { ls_Branch, ls_FinYear } = req.query;
+  const { ls_EmpCode, ls_FinYear } = req.query;
   
-  console.log('Holiday Report API - Received params:', { ls_Branch, ls_FinYear });
+  console.log('Holiday Report API - Received params:', { ls_EmpCode, ls_FinYear });
   
-  if (!ls_Branch || !ls_FinYear) {
+  if (!ls_EmpCode || !ls_FinYear) {
     return res.status(400).json({ 
       success: false, 
-      message: "Branch and Financial Year are required." 
+      message: "Employee Code and Financial Year are required." 
     });
   }
 
   try {
-    const { data } = await axios.get(
-      `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${ls_Branch}&FinYear=${ls_FinYear}`
-    );
+    // First get employee details to fetch branch ID
+    console.log(`Calling GetEmpDtls with: ${BASE_URL}/GetEmpDtls?EMPCode=${ls_EmpCode}`);
+    const empResponse = await axios.get(`${BASE_URL}/GetEmpDtls?EMPCode=${ls_EmpCode}`, axiosConfig);
+    
+    console.log('Employee Details API response:', JSON.stringify(empResponse.data, null, 2));
+    
+    const { l_ClsErrorStatus: empErrorStatus, lst_ClsEmpDtls } = empResponse.data;
+    
+    if (empErrorStatus?.ls_Status !== "S") {
+      console.log('Employee API error status:', empErrorStatus);
+      return res.status(400).json({ 
+        success: false, 
+        message: `Employee API error: ${empErrorStatus?.ls_Message || 'Unknown error'}` 
+      });
+    }
+
+    if (!lst_ClsEmpDtls || lst_ClsEmpDtls.length === 0) {
+      console.log('No employee details found in response');
+      return res.status(400).json({ 
+        success: false, 
+        message: "No employee details found for the given employee code" 
+      });
+    }
+
+    const employeeBranchId = lst_ClsEmpDtls[0].ls_BrnchId;
+    console.log('Employee Details:', lst_ClsEmpDtls[0]);
+    console.log('Employee Branch ID from GetEmpDtls:', employeeBranchId);
+
+    if (!employeeBranchId) {
+      console.log('Branch ID is empty or undefined');
+      return res.status(400).json({ 
+        success: false, 
+        message: "Employee branch ID not found in employee details" 
+      });
+    }
+
+    // Use the correct API URL format you specified with Branch parameter
+    const holidayApiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${employeeBranchId}&FinYear=${ls_FinYear}`;
+    console.log('Calling Holiday API with URL:', holidayApiUrl);
+    
+    const { data } = await axios.get(holidayApiUrl, axiosConfig);
     
     console.log('Holiday API response:', JSON.stringify(data, null, 2));
     
-    // Assuming the API returns data in a similar format to other APIs
+    // Check for error status like other APIs
     const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = data;
     
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -57,6 +95,53 @@ router.get('/holiday-report', async (req, res) => {
 
   } catch (err) {
     console.error('Holiday API error:', err);
+    
+    // If employee details API failed, try using employee code as branch ID
+    if (err.message && err.message.includes('GetEmpDtls')) {
+      console.log('Employee details API failed, trying with employee code as branch...');
+      try {
+        const holidayApiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${ls_EmpCode}&FinYear=${ls_FinYear}`;
+        console.log('Fallback Holiday API URL:', holidayApiUrl);
+        
+        const { data } = await axios.get(holidayApiUrl, axiosConfig);
+        
+        console.log('Fallback Holiday API response:', JSON.stringify(data, null, 2));
+        
+        const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = data;
+        
+        if (l_ClsErrorStatus?.ls_Status !== "S") {
+          return res.status(400).json({ 
+            success: false, 
+            message: l_ClsErrorStatus?.ls_Message || "Failed to fetch holiday report" 
+          });
+        }
+
+        const holidayData = lst_ClsHolidayRptDtls.map(item => ({
+          holidayId: item.ls_HolidayId,
+          holidayName: item.ls_HolidayName,
+          holidayDate: item.ls_HolidayDate,
+          holidayType: item.ls_HolidayType,
+          description: item.ls_Description,
+          branch: item.ls_Branch,
+          finYear: item.ls_FinYear,
+          dayOfWeek: item.ls_DayOfWeek,
+          isOptional: item.ls_IsOptional,
+          category: item.ls_Category
+        }));
+
+        return res.json({
+          success: true,
+          message: "Holiday report fetched successfully (using fallback method)",
+          holidayData,
+          totalHolidays: holidayData.length
+        });
+        
+      } catch (fallbackErr) {
+        console.error('Fallback Holiday API also failed:', fallbackErr);
+        return handleApiError(res, fallbackErr, "Failed to fetch holiday report");
+      }
+    }
+    
     return handleApiError(res, err, "Failed to fetch holiday report");
   }
 });

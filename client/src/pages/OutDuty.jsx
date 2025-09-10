@@ -30,7 +30,9 @@ const OutDuty = ({ userData, setUserData }) => {
     ls_LocManual: '',
     ls_ClientNm: '',
     ls_ReasonVisit: '',
-    ls_Remark: ''
+    ls_Remark: '',
+    manualLat: '',
+    manualLng: ''
   });
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -44,15 +46,38 @@ const OutDuty = ({ userData, setUserData }) => {
         throw new Error('Geolocation is not supported by this browser');
       }
 
+      // Check for geolocation permissions first
+      if (navigator.permissions) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          if (permission.state === 'denied') {
+            throw new Error('Location access is denied. Please enable location permissions in your browser settings.');
+          }
+        } catch (permError) {
+          console.warn('Permission API not available:', permError);
+        }
+      }
+
       const position = await new Promise((resolve, reject) => {
+        const options = {
+          enableHighAccuracy: false, // Changed to false for better compatibility
+          timeout: 30000, // Increased timeout
+          maximumAge: 600000 // Increased cache time
+        };
+
         navigator.geolocation.getCurrentPosition(
           resolve,
-          reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 300000
-          }
+          (error) => {
+            console.error('Geolocation error details:', {
+              code: error.code,
+              message: error.message,
+              PERMISSION_DENIED: error.PERMISSION_DENIED,
+              POSITION_UNAVAILABLE: error.POSITION_UNAVAILABLE,
+              TIMEOUT: error.TIMEOUT
+            });
+            reject(error);
+          },
+          options
         );
       });
 
@@ -121,12 +146,17 @@ const OutDuty = ({ userData, setUserData }) => {
       console.error('Location error:', error);
       let errorMessage = 'Failed to get current location. ';
       
-      if (error.code === 1) {
-        errorMessage += 'Please allow location access and try again.';
+      // Handle specific HRESULT error
+      if (error.message && error.message.includes('0xFFFFFC17')) {
+        errorMessage = 'Location service error detected. Please try the following: 1) Enable location services in Windows Settings, 2) Allow location access in your browser, 3) Restart your browser and try again.';
+      } else if (error.code === 1 || error.message.includes('denied')) {
+        errorMessage += 'Please allow location access in your browser and try again.';
       } else if (error.code === 2) {
-        errorMessage += 'Location unavailable. Please check your device settings.';
+        errorMessage += 'Location unavailable. Please check your device GPS/location settings.';
       } else if (error.code === 3) {
-        errorMessage += 'Location request timed out. Please try again.';
+        errorMessage += 'Location request timed out. Please check your internet connection and try again.';
+      } else if (error.message.includes('HRESULT')) {
+        errorMessage = 'Windows location service error. Please enable location services in Windows Settings > Privacy > Location, then restart your browser.';
       } else {
         errorMessage += 'Please enable location services and try again.';
       }
@@ -144,10 +174,27 @@ const OutDuty = ({ userData, setUserData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!currentLocation || !currentLocation.latitude || !currentLocation.longitude) {
+    let latitude, longitude;
+    
+    // Use current location if available, otherwise use manual coordinates
+    if (currentLocation && currentLocation.latitude && currentLocation.longitude) {
+      latitude = currentLocation.latitude;
+      longitude = currentLocation.longitude;
+    } else if (formData.manualLat && formData.manualLng) {
+      latitude = parseFloat(formData.manualLat);
+      longitude = parseFloat(formData.manualLng);
+      
+      if (isNaN(latitude) || isNaN(longitude)) {
+        setMessage({
+          type: 'error',
+          text: 'Please enter valid latitude and longitude coordinates'
+        });
+        return;
+      }
+    } else {
       setMessage({
         type: 'error',
-        text: 'Please fetch your current location first'
+        text: 'Please fetch your current location or enter manual coordinates'
       });
       return;
     }
@@ -167,10 +214,10 @@ const OutDuty = ({ userData, setUserData }) => {
       const payload = {
         ls_EmpCode: userData.ls_EMPCODE,
         ls_Type: activeType,
-        ls_Location: formData.ls_Location,
+        ls_Location: formData.ls_Location || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
         ls_LocManual: formData.ls_LocManual,
-        ls_Latitude: currentLocation.latitude,
-        ls_Longitude: currentLocation.longitude,
+        ls_Latitude: latitude,
+        ls_Longitude: longitude,
         ls_ClientNm: formData.ls_ClientNm,
         ls_ReasonVisit: formData.ls_ReasonVisit,
         ls_Remark: formData.ls_Remark
@@ -221,7 +268,9 @@ const OutDuty = ({ userData, setUserData }) => {
       ls_LocManual: '',
       ls_ClientNm: '',
       ls_ReasonVisit: '',
-      ls_Remark: ''
+      ls_Remark: '',
+      manualLat: '',
+      manualLng: ''
     });
     setMessage({ type: '', text: '' });
   };
@@ -388,10 +437,33 @@ const OutDuty = ({ userData, setUserData }) => {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">Click "Refresh" to fetch your current location</span>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">Click "Refresh" to fetch your current location</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border border-yellow-200">
+                        <strong>Having location issues?</strong> Try: 1) Enable location in browser settings, 2) Check Windows location services, 3) Use manual coordinates below if auto-detection fails
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="Latitude"
+                          value={formData.manualLat || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, manualLat: e.target.value }))}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="Longitude"
+                          value={formData.manualLng || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, manualLng: e.target.value }))}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                        />
                       </div>
                     </div>
                   )}
@@ -472,7 +544,7 @@ const OutDuty = ({ userData, setUserData }) => {
                     </button>
                     <button
                       type="submit"
-                      disabled={loading || !currentLocation}
+                      disabled={loading || (!currentLocation && (!formData.manualLat || !formData.manualLng))}
                       className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2 ${
                         activeType === 'I' 
                           ? 'bg-green-600 hover:bg-green-700' 
