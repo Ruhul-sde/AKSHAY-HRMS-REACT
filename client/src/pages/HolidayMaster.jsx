@@ -38,10 +38,28 @@ const HolidayMaster = ({ userData, setUserData }) => {
         finYear 
       });
 
-      // Use the employee-specific endpoint that will fetch branch automatically
-      const response = await axios.get('http://localhost:5000/api/auth/holiday-report-emp', {
+      // First get employee details to fetch branch
+      const empResponse = await axios.get('http://localhost:5000/api/auth/employee-details', {
         params: {
-          ls_EmpCode: userData.ls_EMPCODE,
+          ls_EmpCode: userData.ls_EMPCODE
+        }
+      });
+
+      if (!empResponse.data.success) {
+        throw new Error(empResponse.data.message || 'Failed to fetch employee details');
+      }
+
+      const employeeBranch = empResponse.data.employeeDetails?.ls_BrnchId;
+      if (!employeeBranch) {
+        throw new Error('Employee branch information not available');
+      }
+
+      setBranchId(employeeBranch);
+
+      // Now call holiday API directly with branch
+      const response = await axios.get('http://localhost:5000/api/auth/holiday-report', {
+        params: {
+          ls_Branch: employeeBranch,
           ls_FinYear: finYear
         }
       });
@@ -53,7 +71,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
         console.log('Processed holiday data:', holidayData);
         
         setHolidays(holidayData);
-        setBranchId(response.data.employeeBranch || '');
+        // Branch ID already set above
         
         if (holidayData.length === 0) {
           setError(`No holidays found for financial year ${finYear.replace('FY', 'FY ').replace('_', '-')}`);
