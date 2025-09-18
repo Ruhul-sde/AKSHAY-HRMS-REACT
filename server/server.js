@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
 app.use('/api', authRouter);
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+app.listen(PORT, 'localhost', () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
     console.log(`🌐 API Base URL: ${process.env.BASE_URL}`);
 });
