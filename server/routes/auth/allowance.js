@@ -125,47 +125,46 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       }
     }
 
-    console.log('Incoming /allowance-apply request:', { ls_MONTH, entriesCount: lst_ClsAllowenceApplyDtl.length });
+    console.log('Incoming /allowance-apply request:', { 
+      ls_MONTH, 
+      entriesCount: lst_ClsAllowenceApplyDtl.length,
+      hasFiles: req.files ? req.files.length : 0,
+      fileFields: req.files ? req.files.map(f => f.fieldname) : []
+    });
 
     // Process entries to match API format
     const processedEntries = lst_ClsAllowenceApplyDtl.map((entry, index) => {
-      let fileDetails = null;
+      let fileDetails = [];
       
       // Process files if they exist
       if (entry.lst_ClsAllowenceFileDtl && entry.lst_ClsAllowenceFileDtl.length > 0) {
-        fileDetails = entry.lst_ClsAllowenceFileDtl.map(fileRef => {
-          // Find the uploaded file by the reference key
+        entry.lst_ClsAllowenceFileDtl.forEach(fileRef => {
+          // Find the uploaded file by the reference key (fieldname from frontend)
           const uploadedFile = req.files ? req.files.find(f => f.fieldname === fileRef.ls_FILEPATH) : null;
           
           if (uploadedFile) {
             // Use the uploaded file's path in the expected format
-            return {
+            fileDetails.push({
               ls_FILEPATH: `D:\\Allowence\\${entry.ls_EXTYPE}\\${uploadedFile.filename}`,
               ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
-            };
-          } else {
-            // Return null for files that weren't uploaded properly
-            return null;
+            });
           }
-        }).filter(file => file !== null); // Remove null entries
-        
-        // If no files were processed successfully, set to empty array
-        if (fileDetails.length === 0) {
-          fileDetails = [];
-        }
-      } else {
-        fileDetails = [];
+        });
       }
 
-      return {
+      // Ensure all required fields are properly formatted
+      const processedEntry = {
         li_LineId: parseInt(entry.li_LineId) || (index + 1),
         ls_EMPCODE: entry.ls_EMPCODE?.toString() || '',
-        ls_EXTYPE: entry.ls_EXTYPE || '',
-        ls_APLYDATE: entry.ls_APLYDATE || '',
+        ls_EXTYPE: entry.ls_EXTYPE?.toString() || '',
+        ls_APLYDATE: entry.ls_APLYDATE?.toString() || '',
         ld_AMT: parseFloat(entry.ld_AMT) || 0,
-        ls_REMARKS: entry.ls_REMARKS || '',
+        ls_REMARKS: entry.ls_REMARKS?.toString() || '',
         lst_ClsAllowenceFileDtl: fileDetails
       };
+
+      console.log(`Processed Entry ${index + 1}:`, JSON.stringify(processedEntry, null, 2));
+      return processedEntry;
     });
 
     // Format the payload to match the API requirements exactly
@@ -190,14 +189,33 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     
     const { data } = response;
     
-    // Check if the response indicates success - handle both response formats
-    const isSuccess = (data && data.ls_Status === "S") || (data && data.l_ClsErrorStatus?.ls_Status === "S");
-    const message = data?.ls_Message || data?.l_ClsErrorStatus?.ls_Message;
+    // Handle different response formats more robustly
+    let isSuccess = false;
+    let message = '';
+    
+    if (data) {
+      // Check for different success indicators
+      if (data.ls_Status === "S" || data.ls_Status === "Success") {
+        isSuccess = true;
+        message = data.ls_Message || "Allowance applied successfully";
+      } else if (data.l_ClsErrorStatus && data.l_ClsErrorStatus.ls_Status === "S") {
+        isSuccess = true;
+        message = data.l_ClsErrorStatus.ls_Message || "Allowance applied successfully";
+      } else {
+        // Get error message from various possible locations
+        message = data.ls_Message || 
+                 data.l_ClsErrorStatus?.ls_Message || 
+                 data.message || 
+                 "Allowance application failed - please check your details and try again";
+      }
+    } else {
+      message = "No response data received from API";
+    }
     
     if (isSuccess) {
       return res.json({ 
         success: true, 
-        message: message || "Allowance applied successfully", 
+        message: message, 
         data: data 
       });
     } else {
@@ -205,7 +223,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       console.error('Allowance API Error Response:', data);
       return res.status(400).json({ 
         success: false, 
-        message: message || "Allowance application failed - please check your details and try again",
+        message: message,
         apiResponse: data
       });
     }
