@@ -47,7 +47,12 @@ const upload = multer({
 // GET ALLOWANCE TYPES
 router.get('/allowance-types', async (req, res) => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetAllowenceTypes`, axiosConfig);
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetAllowenceTypes';
+    const { data } = await axios.get(apiUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     const { l_ClsErrorStatus, lst_ClsMstrAllowenceTypDtls = [] } = data;
     
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -83,6 +88,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       lst_ClsAllowenceApplyDtl = JSON.parse(lst_ClsAllowenceApplyDtl);
     }
     
+    // Validate required fields
     if (!ls_MONTH) {
       return res.status(400).json({ 
         success: false, 
@@ -97,10 +103,10 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       });
     }
 
-    // Validate required fields
+    // Validate each entry
     for (let i = 0; i < lst_ClsAllowenceApplyDtl.length; i++) {
       const entry = lst_ClsAllowenceApplyDtl[i];
-      if (!entry.ls_EXTYPE) {
+      if (!entry.ls_EXTYPE || entry.ls_EXTYPE.trim() === '') {
         return res.status(400).json({ 
           success: false, 
           message: `Allowance type is required for entry ${i + 1}` 
@@ -112,7 +118,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
           message: `Valid amount is required for entry ${i + 1}` 
         });
       }
-      if (!entry.ls_APLYDATE) {
+      if (!entry.ls_APLYDATE || entry.ls_APLYDATE.trim() === '') {
         return res.status(400).json({ 
           success: false, 
           message: `Date is required for entry ${i + 1}` 
@@ -120,87 +126,94 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       }
     }
 
-    console.log('Incoming /allowance-apply request:', { ls_MONTH, entriesCount: lst_ClsAllowenceApplyDtl.length });
+    console.log('Incoming /allowance-apply request:', { 
+      ls_MONTH, 
+      entriesCount: lst_ClsAllowenceApplyDtl.length,
+      hasFiles: req.files ? req.files.length : 0
+    });
 
-    // Process entries to match API format
+    // Process entries to match API format exactly
     const processedEntries = lst_ClsAllowenceApplyDtl.map((entry, index) => {
-      let fileDetails = null;
+      let fileDetails = [];
       
       // Process files if they exist
       if (entry.lst_ClsAllowenceFileDtl && entry.lst_ClsAllowenceFileDtl.length > 0) {
-        fileDetails = entry.lst_ClsAllowenceFileDtl.map(fileRef => {
+        entry.lst_ClsAllowenceFileDtl.forEach(fileRef => {
           // Find the uploaded file by the reference key
           const uploadedFile = req.files ? req.files.find(f => f.fieldname === fileRef.ls_FILEPATH) : null;
           
           if (uploadedFile) {
-            // Use the uploaded file's path
-            return {
-              ls_FILEPATH: uploadedFile.path || uploadedFile.filename,
+            // Create file path in the format expected by API
+            fileDetails.push({
+              ls_FILEPATH: `D:\\Allowence\\${entry.ls_EXTYPE}\\${uploadedFile.filename}`,
               ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
-            };
-          } else {
-            // Fallback to default path if no file uploaded
-            return {
-              ls_FILEPATH: `D:\\Allowence\\${entry.ls_EXTYPE}\\sample.pdf`,
-              ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
-            };
+            });
           }
         });
       }
 
+      // Format entry exactly as API expects
       return {
         li_LineId: parseInt(entry.li_LineId) || (index + 1),
         ls_EMPCODE: entry.ls_EMPCODE?.toString() || '',
-        ls_EXTYPE: entry.ls_EXTYPE || '',
-        ls_APLYDATE: entry.ls_APLYDATE || '',
+        ls_EXTYPE: entry.ls_EXTYPE?.toString() || '',
+        ls_APLYDATE: entry.ls_APLYDATE?.toString() || '',
         ld_AMT: parseFloat(entry.ld_AMT) || 0,
-        ls_REMARKS: entry.ls_REMARKS || '',
-        lst_ClsAllowenceFileDtl: fileDetails
+        ls_REMARKS: entry.ls_REMARKS?.toString() || '',
+        lst_ClsAllowenceFileDtl: fileDetails.length > 0 ? fileDetails : null
       };
     });
 
-    // Format the payload to match the API requirements exactly
+    // Create payload exactly matching the expected API format
     const payload = {
-      ls_MONTH,
+      ls_MONTH: ls_MONTH,
       lst_ClsAllowenceApplyDtl: processedEntries
     };
 
-    // Log the payload being sent to the real API
+    // Log the payload being sent
     console.log('Backend Allowance Payload:', JSON.stringify(payload, null, 2));
 
-    const response = await axios.post(`${BASE_URL}/AllowenceApply`, payload, axiosConfig);
+    // Call the API
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/AllowenceApply';
+    const response = await axios.post(apiUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    // Log the response from the real API
     console.log('Allowance API Response:', JSON.stringify(response.data, null, 2));
     
     const { data } = response;
     
-    // Check if the response indicates success
-    if (data && data.l_ClsErrorStatus?.ls_Status === "S") {
+    // Check response status - match the expected response format
+    if (data && data.ls_Status === "S") {
       return res.json({ 
         success: true, 
-        message: data.l_ClsErrorStatus.ls_Message || "Allowance applied successfully", 
+        message: data.ls_Message || "Allowance applied successfully", 
         data: data 
       });
     } else {
-      // API returned an error status
       console.error('Allowance API Error Response:', data);
       return res.status(400).json({ 
         success: false, 
-        message: data?.l_ClsErrorStatus?.ls_Message || "Allowance application failed - please check your details and try again",
+        message: data?.ls_Message || "Allowance application failed - please check your details and try again",
         apiResponse: data
       });
     }
   } catch (err) {
-    // Log the error details
     console.error('Allowance Application Error:', err.response?.data || err.message);
     
-    // If there's a response from the API with error details
+    // Handle API error response
     if (err.response?.data) {
+      const errorData = err.response.data;
+      const errorMessage = errorData.ls_Message || 
+                          errorData.message || 
+                          "Allowance application failed";
+      
       return res.status(400).json({
         success: false,
-        message: err.response.data.l_ClsErrorStatus?.ls_Message || err.response.data.message || "Allowance application failed",
-        error: err.response.data
+        message: errorMessage,
+        error: errorData
       });
     }
     
@@ -222,18 +235,23 @@ router.post('/allowance-delete', async (req, res) => {
     
     const payload = { ls_DocEntry };
     
-    const { data } = await axios.post(`${BASE_URL}/AllowenceDelete`, payload, axiosConfig);
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/AllowenceDelete';
+    const { data } = await axios.post(apiUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    if (data?.l_ClsErrorStatus?.ls_Status === "S") {
+    if (data && data.ls_Status === "S") {
       return res.json({ 
         success: true, 
-        message: data.l_ClsErrorStatus.ls_Message || "Allowance deleted successfully",
+        message: data.ls_Message || "Allowance deleted successfully",
         data: data
       });
     } else {
       return res.status(400).json({ 
         success: false, 
-        message: data?.l_ClsErrorStatus?.ls_Message || "Failed to delete allowance" 
+        message: data?.ls_Message || "Failed to delete allowance" 
       });
     }
   } catch (err) {
