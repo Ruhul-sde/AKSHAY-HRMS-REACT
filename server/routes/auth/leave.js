@@ -6,12 +6,15 @@ const router = express.Router();
 
 // LEAVE TYPES
 router.get('/leave-types', async (req, res) => {
-  const { empType } = req.query;
+  const { empType, bplId } = req.query;
   if (!empType) {
     return res.status(400).json({ success: false, message: "Employee type (empType) is required" });
   }
+  if (!bplId) {
+    return res.status(400).json({ success: false, message: "Branch ID (bplId) is required" });
+  }
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetLeaveTypes?EmpType=${empType}`);
+    const { data } = await axios.get(`${BASE_URL}/GetLeaveTypes?EmpType=${empType}&BPLID=${bplId}`);
     const { l_ClsErrorStatus, lst_ClsMstrLeavTypDtls = [] } = data;
     if (l_ClsErrorStatus?.ls_Status !== "S") {
       return res.status(400).json({ success: false, message: l_ClsErrorStatus?.ls_Message || "Failed to fetch leave types" });

@@ -40,13 +40,13 @@ const LeaveApply = ({ userData, setUserData }) => {
 
   useEffect(() => {
     const fetchLeaveTypes = async () => {
-      if (!userData?.ls_EMPTYPE) {
+      if (!userData?.ls_EMPTYPE || !userData?.ls_BrnchId) {
         setError('Employee data not available.');
         setLoadingLeaveTypes(false);
         return;
       }
       try {
-        const res = await axios.get(`http://localhost:5000/api/leave-types?empType=${userData.ls_EMPTYPE}`);
+        const res = await axios.get(`http://localhost:5000/api/leave-types?empType=${userData.ls_EMPTYPE}&bplId=${userData.ls_BrnchId}`);
         if (res.data?.success) {
           setLeaveTypes(res.data.leaveTypes);
         } else {
