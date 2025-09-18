@@ -60,7 +60,9 @@ router.get('/holiday-report', async (req, res) => {
       success: true,
       message: "Holiday report fetched successfully",
       holidayData,
-      totalHolidays: holidayData.length
+      totalHolidays: holidayData.length,
+      employeeBranch: employeeBranchId,
+      branchName: employeeBranchId
     });
 
   } catch (err) {
