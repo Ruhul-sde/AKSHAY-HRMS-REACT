@@ -11,7 +11,6 @@ const HolidayMaster = ({ userData, setUserData }) => {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [useDemoData, setUseDemoData] = useState(true);
   const [finYear, setFinYear] = useState(() => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
@@ -24,69 +23,74 @@ const HolidayMaster = ({ userData, setUserData }) => {
   });
   const [branchId, setBranchId] = useState('');
 
-  // Demo holiday data
-  const demoHolidays = [
-    {
-      "ls_HldDate": "26-01-2025 00:00:00",
-      "ls_Reason": "Republic Day"
-    },
-    {
-      "ls_HldDate": "14-03-2025 00:00:00",
-      "ls_Reason": "Holi"
-    },
-    {
-      "ls_HldDate": "01-05-2025 00:00:00",
-      "ls_Reason": "Maharashtra Din"
-    },
-    {
-      "ls_HldDate": "15-08-2025 00:00:00",
-      "ls_Reason": "Independence Day"
-    },
-    {
-      "ls_HldDate": "27-08-2025 00:00:00",
-      "ls_Reason": "Ganesh Chaturthi"
-    },
-    {
-      "ls_HldDate": "02-10-2025 00:00:00",
-      "ls_Reason": "Mahatma Gandhi Jayanti"
-    },
-    {
-      "ls_HldDate": "02-10-2025 00:00:00",
-      "ls_Reason": "Dassera"
-    },
-    {
-      "ls_HldDate": "21-10-2025 00:00:00",
-      "ls_Reason": "Diwali Amavasya"
-    },
-    {
-      "ls_HldDate": "22-10-2025 00:00:00",
-      "ls_Reason": "Diwali Bali Pratipada"
-    }
-  ];
-
   const fetchHolidays = async () => {
+    if (!userData?.ls_EMPCODE) {
+      setError('Employee code not found. Please login again.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
-    // Always use demo data
-    setTimeout(() => {
-      setHolidays(demoHolidays);
-      setBranchId('01');
+    try {
+      console.log('Fetching holidays for:', { 
+        empCode: userData.ls_EMPCODE, 
+        finYear 
+      });
+
+      // Use the employee-specific endpoint that will fetch branch automatically
+      const response = await axios.get('/api/auth/holiday-report-emp', {
+        params: {
+          ls_EmpCode: userData.ls_EMPCODE,
+          ls_FinYear: finYear
+        }
+      });
+
+      console.log('Holiday API Response:', response.data);
+
+      if (response.data.success) {
+        setHolidays(response.data.holidayData || []);
+        setBranchId(response.data.employeeBranch || '');
+      } else {
+        setError(response.data.message || 'Failed to fetch holidays');
+      }
+    } catch (err) {
+      console.error('Error fetching holidays:', err);
+      setError(
+        err.response?.data?.message || 
+        'Failed to fetch holiday data. Please try again.'
+      );
+    } finally {
       setLoading(false);
-    }, 500); // Simulate loading time
+    }
   };
 
   useEffect(() => {
-    fetchHolidays();
-  }, [finYear]);
+    if (userData?.ls_EMPCODE) {
+      fetchHolidays();
+    }
+  }, [finYear, userData]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-      // Handle date format like "26-01-2025 00:00:00"
-      const datePart = dateString.split(' ')[0];
-      const [day, month, year] = datePart.split('-');
-      const date = new Date(year, month - 1, day);
+      // Handle various date formats
+      let date;
+      
+      if (dateString.includes('-') && dateString.includes(' ')) {
+        // Format like "26-01-2025 00:00:00"
+        const datePart = dateString.split(' ')[0];
+        const [day, month, year] = datePart.split('-');
+        date = new Date(year, month - 1, day);
+      } else if (dateString.includes('/')) {
+        // Format like "26/01/2025"
+        const [day, month, year] = dateString.split('/');
+        date = new Date(year, month - 1, day);
+      } else {
+        // Try parsing directly
+        date = new Date(dateString);
+      }
+      
       return date.toLocaleDateString('en-IN', {
         day: '2-digit',
         month: 'short',
@@ -100,10 +104,19 @@ const HolidayMaster = ({ userData, setUserData }) => {
   const getDayOfWeek = (dateString) => {
     if (!dateString) return '';
     try {
-      // Handle date format like "26-01-2025 00:00:00"
-      const datePart = dateString.split(' ')[0];
-      const [day, month, year] = datePart.split('-');
-      const date = new Date(year, month - 1, day);
+      let date;
+      
+      if (dateString.includes('-') && dateString.includes(' ')) {
+        const datePart = dateString.split(' ')[0];
+        const [day, month, year] = datePart.split('-');
+        date = new Date(year, month - 1, day);
+      } else if (dateString.includes('/')) {
+        const [day, month, year] = dateString.split('/');
+        date = new Date(year, month - 1, day);
+      } else {
+        date = new Date(dateString);
+      }
+      
       return date.toLocaleDateString('en-IN', {
         weekday: 'long'
       });
@@ -218,8 +231,6 @@ const HolidayMaster = ({ userData, setUserData }) => {
                 ))}
               </select>
               
-              
-              
               <button
                 onClick={fetchHolidays}
                 disabled={loading}
@@ -292,24 +303,24 @@ const HolidayMaster = ({ userData, setUserData }) => {
                             </div>
                             <div>
                               <div className="text-sm font-bold text-blue-600">
-                                {formatDate(holiday.ls_HldDate)}
+                                {formatDate(holiday.ls_HldDate || holiday.holidayDate)}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-700">
-                            {getDayOfWeek(holiday.ls_HldDate)}
+                            {getDayOfWeek(holiday.ls_HldDate || holiday.holidayDate)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-bold text-gray-900">
-                            {holiday.ls_Reason || 'Holiday'}
+                            {holiday.ls_Reason || holiday.holidayName || holiday.description || 'Holiday'}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Company Holiday
+                            {holiday.holidayType || 'Company Holiday'}
                           </span>
                         </td>
                       </motion.tr>
