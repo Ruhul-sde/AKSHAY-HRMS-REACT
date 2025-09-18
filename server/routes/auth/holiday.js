@@ -95,7 +95,7 @@ router.get('/holiday-report-emp', async (req, res) => {
       console.log('Employee API error status:', empErrorStatus);
       return res.status(400).json({ 
         success: false, 
-        message: `Employee API error: ${empErrorStatus?.ls_Message || 'Unknown error'}` 
+        message: `Employee not found: ${empErrorStatus?.ls_Message || 'Invalid employee code'}` 
       });
     }
 
@@ -114,57 +114,88 @@ router.get('/holiday-report-emp', async (req, res) => {
       console.log('Branch ID is empty or undefined');
       return res.status(400).json({ 
         success: false, 
-        message: "Employee branch ID not found in employee details" 
+        message: "Employee branch information not available" 
       });
     }
 
-    // Now call the holiday API with the branch ID
-    const holidayApiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${employeeBranchId}&FinYear=${ls_FinYear}`;
+    // Now call the holiday API with the branch ID - ensure proper URL encoding
+    const holidayApiUrl = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${encodeURIComponent(employeeBranchId)}&FinYear=${encodeURIComponent(ls_FinYear)}`;
     console.log('Calling Holiday API with URL:', holidayApiUrl);
 
-    const { data } = await axios.get(holidayApiUrl, {
+    const holidayResponse = await axios.get(holidayApiUrl, {
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 10000 // 10 second timeout
     });
 
-    console.log('Holiday API response:', JSON.stringify(data, null, 2));
+    console.log('Holiday API response:', JSON.stringify(holidayResponse.data, null, 2));
 
-    const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = data;
+    const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = holidayResponse.data;
 
     if (l_ClsErrorStatus?.ls_Status !== "S") {
+      console.log('Holiday API error status:', l_ClsErrorStatus);
       return res.status(400).json({ 
         success: false, 
-        message: l_ClsErrorStatus?.ls_Message || "Failed to fetch holiday report" 
+        message: l_ClsErrorStatus?.ls_Message || "Failed to fetch holiday report for this branch/year" 
       });
     }
 
-    const holidayData = lst_ClsHolidayRptDtls.map(item => ({
-      ls_HldDate: item.ls_HldDate || item.ls_HolidayDate,
-      ls_Reason: item.ls_Reason || item.ls_HolidayName || item.ls_Description,
-      holidayId: item.ls_HolidayId,
-      holidayName: item.ls_HolidayName,
-      holidayDate: item.ls_HolidayDate,
-      holidayType: item.ls_HolidayType,
-      description: item.ls_Description,
-      branch: item.ls_Branch,
-      finYear: item.ls_FinYear,
-      dayOfWeek: item.ls_DayOfWeek,
-      isOptional: item.ls_IsOptional,
-      category: item.ls_Category
-    }));
+    // Map the holiday data with proper field handling
+    const holidayData = lst_ClsHolidayRptDtls.map(item => {
+      // Handle different possible field names from the API
+      const holidayDate = item.ls_HldDate || item.ls_HolidayDate || item.holidayDate;
+      const holidayName = item.ls_Reason || item.ls_HolidayName || item.ls_Description || item.description;
+      
+      return {
+        ls_HldDate: holidayDate,
+        ls_Reason: holidayName,
+        holidayId: item.ls_HolidayId || item.holidayId,
+        holidayName: holidayName,
+        holidayDate: holidayDate,
+        holidayType: item.ls_HolidayType || item.holidayType || 'Company Holiday',
+        description: item.ls_Description || item.description || holidayName,
+        branch: item.ls_Branch || item.branch || employeeBranchId,
+        finYear: item.ls_FinYear || item.finYear || ls_FinYear,
+        dayOfWeek: item.ls_DayOfWeek || item.dayOfWeek,
+        isOptional: item.ls_IsOptional || item.isOptional || false,
+        category: item.ls_Category || item.category || 'Regular'
+      };
+    });
+
+    console.log('Processed holiday data:', holidayData);
 
     return res.json({
       success: true,
-      message: "Holiday report fetched successfully",
+      message: `Holiday report fetched successfully for ${ls_FinYear}`,
       holidayData,
       totalHolidays: holidayData.length,
-      employeeBranch: employeeBranchId
+      employeeBranch: employeeBranchId,
+      branchName: lst_ClsEmpDtls[0].ls_BrnchName || employeeBranchId
     });
 
   } catch (err) {
     console.error('Holiday API error:', err.response?.data || err.message);
-    return handleApiError(res, err, "Failed to fetch holiday report");
+    
+    let errorMessage = "Failed to fetch holiday report";
+    
+    if (err.code === 'ECONNREFUSED') {
+      errorMessage = "Holiday service is currently unavailable";
+    } else if (err.code === 'ETIMEDOUT') {
+      errorMessage = "Request timeout - holiday service is taking too long to respond";
+    } else if (err.response?.status === 404) {
+      errorMessage = "Holiday API endpoint not found";
+    } else if (err.response?.status === 500) {
+      errorMessage = "Holiday service internal error";
+    } else if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
+    }
+    
+    return res.status(500).json({
+      success: false,
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

@@ -39,7 +39,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
       });
 
       // Use the employee-specific endpoint that will fetch branch automatically
-      const response = await axios.get('/api/auth/holiday-report-emp', {
+      const response = await axios.get('http://localhost:5000/api/auth/holiday-report-emp', {
         params: {
           ls_EmpCode: userData.ls_EMPCODE,
           ls_FinYear: finYear
@@ -49,17 +49,33 @@ const HolidayMaster = ({ userData, setUserData }) => {
       console.log('Holiday API Response:', response.data);
 
       if (response.data.success) {
-        setHolidays(response.data.holidayData || []);
+        const holidayData = response.data.holidayData || [];
+        console.log('Processed holiday data:', holidayData);
+        
+        setHolidays(holidayData);
         setBranchId(response.data.employeeBranch || '');
+        
+        if (holidayData.length === 0) {
+          setError(`No holidays found for financial year ${finYear.replace('FY', 'FY ').replace('_', '-')}`);
+        }
       } else {
         setError(response.data.message || 'Failed to fetch holidays');
       }
     } catch (err) {
       console.error('Error fetching holidays:', err);
-      setError(
-        err.response?.data?.message || 
-        'Failed to fetch holiday data. Please try again.'
-      );
+      let errorMessage = 'Failed to fetch holiday data. Please try again.';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid request. Please check your employee code and try again.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please contact support if this persists.';
+      } else if (err.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -86,9 +102,19 @@ const HolidayMaster = ({ userData, setUserData }) => {
         // Format like "26/01/2025"
         const [day, month, year] = dateString.split('/');
         date = new Date(year, month - 1, day);
+      } else if (dateString.length === 8) {
+        // Format like "20250126"
+        const year = dateString.substring(0, 4);
+        const month = dateString.substring(4, 6);
+        const day = dateString.substring(6, 8);
+        date = new Date(year, month - 1, day);
       } else {
         // Try parsing directly
         date = new Date(dateString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original if parsing fails
       }
       
       return date.toLocaleDateString('en-IN', {
@@ -113,8 +139,17 @@ const HolidayMaster = ({ userData, setUserData }) => {
       } else if (dateString.includes('/')) {
         const [day, month, year] = dateString.split('/');
         date = new Date(year, month - 1, day);
+      } else if (dateString.length === 8) {
+        const year = dateString.substring(0, 4);
+        const month = dateString.substring(4, 6);
+        const day = dateString.substring(6, 8);
+        date = new Date(year, month - 1, day);
       } else {
         date = new Date(dateString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return '';
       }
       
       return date.toLocaleDateString('en-IN', {
@@ -130,7 +165,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
     const currentYear = currentDate.getFullYear();
     const options = [];
     
-    for (let i = -1; i <= 1; i++) {
+    for (let i = -2; i <= 2; i++) {
       const startYear = currentYear + i;
       const endYear = startYear + 1;
       const fyValue = `FY${startYear}_${endYear.toString().slice(-2)}`;
@@ -142,7 +177,6 @@ const HolidayMaster = ({ userData, setUserData }) => {
   };
 
   if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} onRetry={fetchHolidays} />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -203,7 +237,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
                   <MapPin className="w-6 h-6 text-green-600" />
                   <div>
                     <p className="text-sm text-green-600 font-medium">Branch</p>
-                    <p className="text-green-800 font-semibold">{branchId || 'N/A'}</p>
+                    <p className="text-green-800 font-semibold">{branchId || 'Loading...'}</p>
                   </div>
                 </div>
               </div>
@@ -225,6 +259,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
                 value={finYear}
                 onChange={(e) => setFinYear(e.target.value)}
                 className="px-6 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-center font-medium"
+                disabled={loading}
               >
                 {generateFinancialYearOptions().map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -242,8 +277,31 @@ const HolidayMaster = ({ userData, setUserData }) => {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-6 h-6 text-red-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-red-800">Unable to Load Holidays</h3>
+                  <p className="text-red-600 mt-1">{error}</p>
+                  <button
+                    onClick={fetchHolidays}
+                    className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Holiday Table */}
-          {(!holidays || !Array.isArray(holidays) || holidays.length === 0) ? (
+          {!error && (!holidays || !Array.isArray(holidays) || holidays.length === 0) ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -252,9 +310,9 @@ const HolidayMaster = ({ userData, setUserData }) => {
             >
               <AlertCircle className="w-20 h-20 text-gray-400 mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-gray-600 mb-3">No Holidays Found</h3>
-              <p className="text-gray-500 text-lg">No holidays are available for the selected financial year.</p>
+              <p className="text-gray-500 text-lg">No holidays are available for the selected financial year {finYear.replace('FY', 'FY ').replace('_', '-')}.</p>
             </motion.div>
-          ) : (
+          ) : !error && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -332,21 +390,23 @@ const HolidayMaster = ({ userData, setUserData }) => {
           )}
 
           {/* Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white rounded-3xl shadow-xl p-8 mt-8 border border-gray-100"
-          >
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Holiday Summary</h3>
-              <p className="text-gray-600 mb-4">Total holidays for {finYear.replace('FY', 'FY ').replace('_', '-')}</p>
-              <div className="text-5xl font-bold text-green-600 mb-2">
-                {Array.isArray(holidays) ? holidays.length : 0}
+          {!error && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-3xl shadow-xl p-8 mt-8 border border-gray-100"
+            >
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Holiday Summary</h3>
+                <p className="text-gray-600 mb-4">Total holidays for {finYear.replace('FY', 'FY ').replace('_', '-')}</p>
+                <div className="text-5xl font-bold text-green-600 mb-2">
+                  {Array.isArray(holidays) ? holidays.length : 0}
+                </div>
+                <p className="text-gray-500">Company Holidays</p>
               </div>
-              <p className="text-gray-500">Company Holidays</p>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>
