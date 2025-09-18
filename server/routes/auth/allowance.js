@@ -47,7 +47,12 @@ const upload = multer({
 // GET ALLOWANCE TYPES
 router.get('/allowance-types', async (req, res) => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetAllowenceTypes`, axiosConfig);
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetAllowenceTypes';
+    const { data } = await axios.get(apiUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     const { l_ClsErrorStatus, lst_ClsMstrAllowenceTypDtls = [] } = data;
     
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -133,9 +138,9 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
           const uploadedFile = req.files ? req.files.find(f => f.fieldname === fileRef.ls_FILEPATH) : null;
           
           if (uploadedFile) {
-            // Use the uploaded file's path
+            // Use the uploaded file's path in the expected format
             return {
-              ls_FILEPATH: uploadedFile.path || uploadedFile.filename,
+              ls_FILEPATH: `D:\\Allowence\\${entry.ls_EXTYPE}\\${uploadedFile.filename}`,
               ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
             };
           } else {
@@ -168,18 +173,24 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     // Log the payload being sent to the real API
     console.log('Backend Allowance Payload:', JSON.stringify(payload, null, 2));
 
-    const response = await axios.post(`${BASE_URL}/AllowenceApply`, payload, axiosConfig);
+    // Use the correct API endpoint
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/AllowenceApply';
+    const response = await axios.post(apiUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
     // Log the response from the real API
     console.log('Allowance API Response:', JSON.stringify(response.data, null, 2));
     
     const { data } = response;
     
-    // Check if the response indicates success
-    if (data && data.l_ClsErrorStatus?.ls_Status === "S") {
+    // Check if the response indicates success (based on your example response format)
+    if (data && data.ls_Status === "S") {
       return res.json({ 
         success: true, 
-        message: data.l_ClsErrorStatus.ls_Message || "Allowance applied successfully", 
+        message: data.ls_Message || "Allowance applied successfully", 
         data: data 
       });
     } else {
@@ -187,7 +198,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       console.error('Allowance API Error Response:', data);
       return res.status(400).json({ 
         success: false, 
-        message: data?.l_ClsErrorStatus?.ls_Message || "Allowance application failed - please check your details and try again",
+        message: data?.ls_Message || "Allowance application failed - please check your details and try again",
         apiResponse: data
       });
     }
@@ -199,7 +210,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     if (err.response?.data) {
       return res.status(400).json({
         success: false,
-        message: err.response.data.l_ClsErrorStatus?.ls_Message || err.response.data.message || "Allowance application failed",
+        message: err.response.data.ls_Message || err.response.data.message || "Allowance application failed",
         error: err.response.data
       });
     }
@@ -222,7 +233,12 @@ router.post('/allowance-delete', async (req, res) => {
     
     const payload = { ls_DocEntry };
     
-    const { data } = await axios.post(`${BASE_URL}/AllowenceDelete`, payload, axiosConfig);
+    const apiUrl = 'http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/AllowenceDelete';
+    const { data } = await axios.post(apiUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
     if (data?.l_ClsErrorStatus?.ls_Status === "S") {
       return res.json({ 
