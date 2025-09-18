@@ -105,7 +105,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     // Validate required fields
     for (let i = 0; i < lst_ClsAllowenceApplyDtl.length; i++) {
       const entry = lst_ClsAllowenceApplyDtl[i];
-      if (!entry.ls_EXTYPE) {
+      if (!entry.ls_EXTYPE || entry.ls_EXTYPE.trim() === '') {
         return res.status(400).json({ 
           success: false, 
           message: `Allowance type is required for entry ${i + 1}` 
@@ -117,7 +117,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
           message: `Valid amount is required for entry ${i + 1}` 
         });
       }
-      if (!entry.ls_APLYDATE) {
+      if (!entry.ls_APLYDATE || entry.ls_APLYDATE.trim() === '') {
         return res.status(400).json({ 
           success: false, 
           message: `Date is required for entry ${i + 1}` 
@@ -144,13 +144,17 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
               ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
             };
           } else {
-            // Fallback to default path if no file uploaded
-            return {
-              ls_FILEPATH: `D:\\Allowence\\${entry.ls_EXTYPE}\\sample.pdf`,
-              ls_REMARKS: fileRef.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
-            };
+            // Return null for files that weren't uploaded properly
+            return null;
           }
-        });
+        }).filter(file => file !== null); // Remove null entries
+        
+        // If no files were processed successfully, set to empty array
+        if (fileDetails.length === 0) {
+          fileDetails = [];
+        }
+      } else {
+        fileDetails = [];
       }
 
       return {
@@ -186,11 +190,14 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     
     const { data } = response;
     
-    // Check if the response indicates success (based on your example response format)
-    if (data && data.ls_Status === "S") {
+    // Check if the response indicates success - handle both response formats
+    const isSuccess = (data && data.ls_Status === "S") || (data && data.l_ClsErrorStatus?.ls_Status === "S");
+    const message = data?.ls_Message || data?.l_ClsErrorStatus?.ls_Message;
+    
+    if (isSuccess) {
       return res.json({ 
         success: true, 
-        message: data.ls_Message || "Allowance applied successfully", 
+        message: message || "Allowance applied successfully", 
         data: data 
       });
     } else {
@@ -198,7 +205,7 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
       console.error('Allowance API Error Response:', data);
       return res.status(400).json({ 
         success: false, 
-        message: data?.ls_Message || "Allowance application failed - please check your details and try again",
+        message: message || "Allowance application failed - please check your details and try again",
         apiResponse: data
       });
     }
@@ -208,10 +215,16 @@ router.post('/allowance-apply', upload.any(), async (req, res) => {
     
     // If there's a response from the API with error details
     if (err.response?.data) {
+      const errorData = err.response.data;
+      const errorMessage = errorData.ls_Message || 
+                          errorData.l_ClsErrorStatus?.ls_Message || 
+                          errorData.message || 
+                          "Allowance application failed";
+      
       return res.status(400).json({
         success: false,
-        message: err.response.data.ls_Message || err.response.data.message || "Allowance application failed",
-        error: err.response.data
+        message: errorMessage,
+        error: errorData
       });
     }
     
@@ -240,16 +253,20 @@ router.post('/allowance-delete', async (req, res) => {
       },
     });
     
-    if (data?.l_ClsErrorStatus?.ls_Status === "S") {
+    // Handle both response formats for delete
+    const isSuccess = (data && data.ls_Status === "S") || (data && data.l_ClsErrorStatus?.ls_Status === "S");
+    const message = data?.ls_Message || data?.l_ClsErrorStatus?.ls_Message;
+    
+    if (isSuccess) {
       return res.json({ 
         success: true, 
-        message: data.l_ClsErrorStatus.ls_Message || "Allowance deleted successfully",
+        message: message || "Allowance deleted successfully",
         data: data
       });
     } else {
       return res.status(400).json({ 
         success: false, 
-        message: data?.l_ClsErrorStatus?.ls_Message || "Failed to delete allowance" 
+        message: message || "Failed to delete allowance" 
       });
     }
   } catch (err) {
