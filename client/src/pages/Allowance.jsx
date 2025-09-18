@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Coins, Sparkles, Clock, Plus, Trash2, Calendar, DollarSign, FileText, Upload, X, IndianRupee } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import axios from 'axios';
+import api from '../api';
 import dayjs from 'dayjs';
 
 const Allowance = ({ userData, setUserData }) => {
@@ -24,7 +24,7 @@ const Allowance = ({ userData, setUserData }) => {
   const fetchAllowanceTypes = async () => {
     try {
       setLoadingTypes(true);
-      const response = await axios.get('http://localhost:5000/api/allowance-types');
+      const response = await api.get('/allowance-types');
       if (response.data.success) {
         setAllowanceTypes(response.data.allowanceTypes);
       } else {
@@ -154,7 +154,7 @@ const Allowance = ({ userData, setUserData }) => {
 
       console.log('Submitting allowance with files...');
 
-      const response = await axios.post('http://localhost:5000/api/allowance-apply', formData, {
+      const response = await api.post('/allowance-apply', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
