@@ -7,31 +7,18 @@ const router = express.Router();
 
 // GET HOLIDAY REPORT
 router.get('/holiday-report', async (req, res) => {
-  const { ls_EmpCode, ls_FinYear } = req.query;
-  console.log('Holiday Report API - Received params:', { ls_EmpCode, ls_FinYear });
+  const { ls_BranchId, ls_FinYear } = req.query;
+  console.log('Holiday Report API - Received params:', { ls_BranchId, ls_FinYear });
   
-  if (!ls_EmpCode || !ls_FinYear) {
+  if (!ls_BranchId || !ls_FinYear) {
     return res.status(400).json({ 
       success: false, 
-      message: "Employee Code and Financial Year are required." 
+      message: "Branch ID and Financial Year are required." 
     });
   }
 
   try {
-    // First get employee details to fetch branch ID
-    const empResponse = await axios.get(`${BASE_URL}/GetEmpDetail?EMPCode=${ls_EmpCode}`);
-    const empData = empResponse.data;
-    
-    console.log('Employee Details API Response:', JSON.stringify(empData, null, 2));
-    
-    if (!empData?.lst_ClsEmpDetailsDtls?.[0]?.ls_BrnchId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Employee branch ID not found" 
-      });
-    }
-
-    const branchId = empData.lst_ClsEmpDetailsDtls[0].ls_BrnchId;
+    const branchId = ls_BranchId;
 
     const { data } = await axios.get(`${BASE_URL}/GetHolidayRpt?Branch=${branchId}&FinYear=${ls_FinYear}`);
     
@@ -60,7 +47,7 @@ router.get('/holiday-report', async (req, res) => {
       success: true,
       message: "Holiday report fetched successfully",
       holidayData,
-      branchId
+      branchId: branchId
     });
   } catch (err) {
     return handleApiError(res, err, "Failed to fetch holiday report");

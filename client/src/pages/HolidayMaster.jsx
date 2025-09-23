@@ -44,12 +44,19 @@ const HolidayMaster = ({ userData, setUserData }) => {
     setLoading(true);
     setError('');
 
+    // Check if we have branch ID from profile
+    if (!userData?.ls_BrnchId) {
+      setError('Branch ID not found in profile. Please contact administrator.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await axios.get(
         `http://localhost:5000/api/holiday-report`,
         {
           params: {
-            ls_EmpCode: userData?.ls_EMPCODE, // Use employee code
+            ls_BranchId: userData.ls_BrnchId, // Use branch ID from profile
             ls_FinYear: filters.finYear
           },
         }
@@ -367,7 +374,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
                   </span>
                 </div>
                 <div className="text-sm opacity-90">
-                  {filters.finYear} • Employee {userData?.ls_EMPCODE || 'N/A'}
+                  {filters.finYear} • Branch {userData?.ls_BrnchId || 'N/A'} • Employee {userData?.ls_EMPCODE || 'N/A'}
                 </div>
               </div>
             </div>

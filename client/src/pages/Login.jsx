@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { motion } from 'framer-motion';
 import { FaSpinner, FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { RiShieldUserLine } from 'react-icons/ri';
 import Particles from 'react-tsparticles';
+import logo from '../assets/logo.png';
 import { loadFull } from 'tsparticles';
 
 function Login({ setUserData }) {
@@ -136,9 +136,13 @@ function Login({ setUserData }) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
-            className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg"
+            className="p-4 rounded-full shadow-lg"
           >
-            <RiShieldUserLine className="text-white text-4xl" />
+            <img 
+              src={logo} 
+              alt="Company Logo" 
+              className="w-16 h-16 object-contain"
+            />
           </motion.div>
         </div>
 
