@@ -10,16 +10,16 @@ const dropdownItems = {
     { label: 'Leave History', to: '/leave-history', icon: '🕒' },
     // { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
   ],
-  loan: [
-    { label: 'Apply for Loan', to: '/apply-loan', icon: '💰' },
-    { label: 'Loan Status', to: '/loan-status', icon: '📊' },
-  ],
+  // loan: [
+  //   { label: 'Apply for Loan', to: '/apply-loan', icon: '💰' },
+  //   { label: 'Loan Status', to: '/loan-status', icon: '📊' },
+  // ],
   reports: [
     { label: 'Leave Report', to: '/leave-report', icon: '📑' },
     { label: 'Pay Structure Report', to: '/pay-structure-report', icon: '💵' },
     { label: 'Annual Summary Report', to: '/annual-summary-report', icon: '📈' },
     { label: 'Monthly Attendance Report', to: '/monthly-attendance-report', icon: '🗓️' },
-    { label: 'Loan Report', to: '/loan-report', icon: '📋' },
+    // { label: 'Loan Report', to: '/loan-report', icon: '📋' },
     { label: 'FulNFinal Report', to: '/fulnfinal-report', icon: '🏁' },
     { label: 'Employee Details Report', to: '/employee-details-report', icon: '👥' },
   ]
@@ -57,7 +57,7 @@ const mobileMenuVariants = {
 const Navbar = ({ setUserData, userData }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
-  const [loanOpen, setLoanOpen] = useState(false);
+  // const [loanOpen, setLoanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
@@ -152,12 +152,12 @@ const Navbar = ({ setUserData, userData }) => {
             items={dropdownItems.leave}
           />
 
-          <Dropdown
+          {/* <Dropdown
             label="Loan"
             open={loanOpen}
             setOpen={setLoanOpen}
             items={dropdownItems.loan}
-          />
+          /> */}
 
           <NavItem to="/allowance">Allowance</NavItem>
 

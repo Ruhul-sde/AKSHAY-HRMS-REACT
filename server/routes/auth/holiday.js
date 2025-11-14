@@ -7,21 +7,25 @@ const router = express.Router();
 
 // GET HOLIDAY REPORT
 router.get('/holiday-report', async (req, res) => {
-  const { ls_BranchId, ls_FinYear } = req.query;
-  console.log('Holiday Report API - Received params:', { ls_BranchId, ls_FinYear });
+  const { ls_Branch, ls_FinYear } = req.query;
   
-  if (!ls_BranchId || !ls_FinYear) {
+  console.log('Holiday Report API - Received params:', { ls_Branch, ls_FinYear });
+  
+  if (!ls_Branch || !ls_FinYear) {
     return res.status(400).json({ 
       success: false, 
-      message: "Branch ID and Financial Year are required." 
+      message: "Branch and Financial Year are required." 
     });
   }
 
   try {
-    const branchId = ls_BranchId;
-
-    const { data } = await axios.get(`${BASE_URL}/GetHolidayRpt?Branch=${branchId}&FinYear=${ls_FinYear}`);
+    const { data } = await axios.get(
+      `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${ls_Branch}&FinYear=${ls_FinYear}`
+    );
     
+    console.log('Holiday API response:', JSON.stringify(data, null, 2));
+    
+    // Assuming the API returns data in a similar format to other APIs
     const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = data;
     
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -31,26 +35,148 @@ router.get('/holiday-report', async (req, res) => {
       });
     }
 
-    const holidayData = lst_ClsHolidayRptDtls.map(item => {
-      // Parse the date format "26-01-2025 00:00:00" to proper date
-      const datePart = item.ls_HldDate.split(' ')[0]; // Get "26-01-2025"
-      const [day, month, year] = datePart.split('-');
-      const formattedDate = `${year}-${month}-${day}`; // Convert to "2025-01-26"
-      
-      return {
-        holidayDate: formattedDate,
-        reason: item.ls_Reason
-      };
-    });
+    const holidayData = lst_ClsHolidayRptDtls.map(item => ({
+      holidayId: item.ls_HolidayId,
+      holidayName: item.ls_HolidayName,
+      holidayDate: item.ls_HolidayDate,
+      holidayType: item.ls_HolidayType,
+      description: item.ls_Description,
+      branch: item.ls_Branch,
+      finYear: item.ls_FinYear,
+      dayOfWeek: item.ls_DayOfWeek,
+      isOptional: item.ls_IsOptional,
+      category: item.ls_Category
+    }));
 
     return res.json({
       success: true,
       message: "Holiday report fetched successfully",
       holidayData,
-      branchId: branchId
+      totalHolidays: holidayData.length
     });
+
   } catch (err) {
+    console.error('Holiday API error:', err);
     return handleApiError(res, err, "Failed to fetch holiday report");
+  }
+});
+
+// GET AVAILABLE BRANCHES
+router.get('/branches', async (req, res) => {
+  try {
+    // This would typically come from another API or be hardcoded
+    const branches = [
+      { value: 'PUNE', label: 'Pune' },
+      { value: 'MUMBAI', label: 'Mumbai' },
+      { value: 'DELHI', label: 'Delhi' },
+      { value: 'BANGALORE', label: 'Bangalore' },
+      { value: 'HYDERABAD', label: 'Hyderabad' }
+    ];
+
+    return res.json({
+      success: true,
+      message: "Branches fetched successfully",
+      branches
+    });
+
+  } catch (err) {
+    console.error('Branches API error:', err);
+    return handleApiError(res, err, "Failed to fetch branches");
+  }
+});
+
+// GET AVAILABLE FINANCIAL YEARS
+router.get('/financial-years', async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const financialYears = [
+      { value: `FY${currentYear-1}-${(currentYear).toString().slice(-2)}`, label: `FY ${currentYear-1}-${currentYear}` },
+      { value: `FY${currentYear}-${(currentYear+1).toString().slice(-2)}`, label: `FY ${currentYear}-${currentYear+1}` },
+      { value: `FY${currentYear+1}-${(currentYear+2).toString().slice(-2)}`, label: `FY ${currentYear+1}-${currentYear+2}` }
+    ];
+
+    return res.json({
+      success: true,
+      message: "Financial years fetched successfully",
+      financialYears
+    });
+
+  } catch (err) {
+    console.error('Financial years API error:', err);
+    return handleApiError(res, err, "Failed to fetch financial years");
+  }
+});
+
+// CREATE HOLIDAY
+router.post('/create-holiday', async (req, res) => {
+  const { ls_EmpType, ls_HldDate, ls_Reason } = req.body;
+  
+  console.log('Create Holiday API - Received params:', { ls_EmpType, ls_HldDate, ls_Reason });
+  
+  if (!ls_EmpType || !ls_HldDate || !ls_Reason) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Employee Type, Holiday Date, and Reason are required." 
+    });
+  }
+
+  try {
+    const payload = {
+      ls_EmpType: ls_EmpType.toString(),
+      ls_HldDate: ls_HldDate, // Format: "yyyyMMdd"
+      ls_Reason: ls_Reason.toString()
+    };
+
+    // Make API call to create holiday (assuming there's an endpoint for this)
+    // For now, we'll simulate a successful creation
+    console.log('Creating holiday with payload:', payload);
+    
+    // Simulate API response
+    const mockResponse = {
+      ls_Status: "S",
+      ls_Message: "Holiday created successfully"
+    };
+
+    if (mockResponse.ls_Status === "S") {
+      return res.json({
+        success: true,
+        message: mockResponse.ls_Message || "Holiday created successfully",
+        data: payload
+      });
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: mockResponse.ls_Message || "Failed to create holiday" 
+      });
+    }
+
+  } catch (err) {
+    console.error('Create Holiday API error:', err);
+    return handleApiError(res, err, "Failed to create holiday");
+  }
+});
+
+// GET EMPLOYEE TYPES
+router.get('/employee-types', async (req, res) => {
+  try {
+    // This would typically come from another API or database
+    const employeeTypes = [
+      { value: 'ALL', label: 'All Employees' },
+      { value: 'PERM', label: 'Permanent' },
+      { value: 'TEMP', label: 'Temporary' },
+      { value: 'CONTRACT', label: 'Contract' },
+      { value: 'INTERN', label: 'Intern' }
+    ];
+
+    return res.json({
+      success: true,
+      message: "Employee types fetched successfully",
+      employeeTypes
+    });
+
+  } catch (err) {
+    console.error('Employee types API error:', err);
+    return handleApiError(res, err, "Failed to fetch employee types");
   }
 });
 

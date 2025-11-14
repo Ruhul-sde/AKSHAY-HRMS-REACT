@@ -3,26 +3,34 @@ const axios = require('axios');
 const dayjs = require('dayjs');
 const { BASE_URL, axiosConfig, handleApiError } = require('./utils');
 const router = express.Router();
-
-// LEAVE TYPES
+// Leave Types
 router.get('/leave-types', async (req, res) => {
   const { empType } = req.query;
-  if (!empType) {
-    return res.status(400).json({ success: false, message: "Employee type (empType) is required" });
-  }
+  if (!empType) return res.status(400).json({ success: false, message: "Employee type (empType) is required" });
+
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetLeaveTypes?EmpType=${empType}`);
-    const { l_ClsErrorStatus, lst_ClsMstrLeavTypDtls = [] } = data;
+    const url = `${BASE_URL}/GetLeaveTypes?EmpType=${encodeURIComponent(empType)}`;
+    const { data } = await axios.get(url, { timeout: 5000 });
+
+    const { l_ClsErrorStatus, lst_ClsMstrLeavTypDtls = [] } = data || {};
+
     if (l_ClsErrorStatus?.ls_Status !== "S") {
-      return res.status(400).json({ success: false, message: l_ClsErrorStatus?.ls_Message || "Failed to fetch leave types" });
+      // map upstream failure to 502 Bad Gateway (more accurate)
+      return res.status(502).json({
+        success: false,
+        message: l_ClsErrorStatus?.ls_Message || "Upstream service failed to provide leave types"
+      });
     }
-    const leaveTypes = lst_ClsMstrLeavTypDtls.map(item => ({
+
+    const leaveTypes = (lst_ClsMstrLeavTypDtls || []).map(item => ({
       code: item.ls_CODE,
       name: item.ls_NAME,
       description: item.ls_DESC || ""
     }));
+
     return res.json({ success: true, message: "Leave types fetched successfully", leaveTypes });
   } catch (err) {
+    // handleApiError should log error details and send a safe message
     return handleApiError(res, err, "Failed to fetch leave types");
   }
 });

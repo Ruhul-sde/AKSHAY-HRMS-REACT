@@ -190,14 +190,14 @@ function App() {
         }
       />
 
-      <Route
+      {/* <Route
         path="/loan-report"
         element={
           <RequireAuth user={userData}>
             <LoanReport userData={userData} setUserData={setUserData} />
           </RequireAuth>
         }
-      />
+      /> */}
 
       <Route
         path="/fulnfinal-report"
