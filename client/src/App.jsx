@@ -32,6 +32,31 @@ const RequireAuth = ({ user, children }) => {
 function App() {
   const [userData, setUserData] = useState(null);
 
+  // Direct (no env) API base — use relative path so it works from other devices
+  // (IIS will proxy /api -> node backend). If you prefer absolute, replace '/api' with 'http://49.249.199.62:85'
+  const API_BASE = '/api';
+
+  // Simple fetch wrapper that always targets the server (no env usage)
+  const apiFetch = async (path, options = {}) => {
+    const url = `${API_BASE}${path}`;
+    try {
+      const res = await fetch(url, options);
+      // if caller expects raw Response they can handle it; here we try JSON by default
+      const text = await res.text();
+      // if response is JSON-like parse it, else return text
+      try {
+        return JSON.parse(text);
+      } catch {
+        // not JSON, return text or original response depending on status
+        if (!res.ok) throw new Error(text || res.statusText);
+        return text;
+      }
+    } catch (err) {
+      // bubble up a descriptive error
+      throw new Error(`apiFetch error (${url}): ${err.message}`);
+    }
+  };
+
   // On mount, load user data from sessionStorage (expires when browser closes)
   useEffect(() => {
     const storedUser = sessionStorage.getItem('userData');
@@ -59,7 +84,8 @@ function App() {
           userData ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <Login setUserData={setUserData} />
+            // pass apiFetch so Login can call backend via the correct base
+            <Login setUserData={setUserData} apiFetch={apiFetch} />
           )
         }
       />
@@ -68,7 +94,7 @@ function App() {
         path="/dashboard"
         element={
           <RequireAuth user={userData}>
-            <Dashboard userData={userData} setUserData={setUserData} />
+            <Dashboard userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -77,7 +103,7 @@ function App() {
         path="/apply-leave"
         element={
           <RequireAuth user={userData}>
-            <LeaveApply userData={userData} setUserData={setUserData} />
+            <LeaveApply userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -86,7 +112,7 @@ function App() {
         path="/change-password"
         element={
           <RequireAuth user={userData}>
-            <ChangePassword userData={userData} setUserData={setUserData} />
+            <ChangePassword userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -95,7 +121,7 @@ function App() {
         path="/leave-history"
         element={
           <RequireAuth user={userData}>
-            <LeaveHistory userData={userData} setUserData={setUserData} />
+            <LeaveHistory userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -104,7 +130,7 @@ function App() {
         path="/pending-leaves"
         element={
           <RequireAuth user={userData}>
-            <PendingLeaves userData={userData} setUserData={setUserData} />
+            <PendingLeaves userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -113,7 +139,7 @@ function App() {
         path="/apply-loan"
         element={
           <RequireAuth user={userData}>
-            <LoanApply userData={userData} setUserData={setUserData} />
+            <LoanApply userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -122,7 +148,7 @@ function App() {
         path="/monthly-attendance-report"
         element={
           <RequireAuth user={userData}>
-            <MonthlyAttendanceReport userData={userData} setUserData={setUserData} />
+            <MonthlyAttendanceReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -131,7 +157,7 @@ function App() {
         path="/help"
         element={
           <RequireAuth user={userData}>
-            <Help userData={userData} setUserData={setUserData} />
+            <Help userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -140,7 +166,7 @@ function App() {
         path="/attendance"
         element={
           <RequireAuth user={userData}>
-            <Attendance userData={userData} setUserData={setUserData} />
+            <Attendance userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -149,7 +175,7 @@ function App() {
         path="/profile"
         element={
           <RequireAuth user={userData}>
-            <Profile userData={userData} setUserData={setUserData} />
+            <Profile userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -158,7 +184,7 @@ function App() {
         path="/allowance"
         element={
           <RequireAuth user={userData}>
-            <Allowance userData={userData} setUserData={setUserData} />
+            <Allowance userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -167,7 +193,7 @@ function App() {
         path="/leave-report"
         element={
           <RequireAuth user={userData}>
-            <LeaveReport userData={userData} setUserData={setUserData} />
+            <LeaveReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -176,7 +202,7 @@ function App() {
         path="/pay-structure-report"
         element={
           <RequireAuth user={userData}>
-            <PayStructureReport userData={userData} setUserData={setUserData} />
+            <PayStructureReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -185,7 +211,7 @@ function App() {
         path="/annual-summary-report"
         element={
           <RequireAuth user={userData}>
-            <AnnualSummaryReport userData={userData} setUserData={setUserData} />
+            <AnnualSummaryReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -194,7 +220,7 @@ function App() {
         path="/loan-report"
         element={
           <RequireAuth user={userData}>
-            <LoanReport userData={userData} setUserData={setUserData} />
+            <LoanReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       /> */}
@@ -203,7 +229,7 @@ function App() {
         path="/fulnfinal-report"
         element={
           <RequireAuth user={userData}>
-            <FulNFinalReport userData={userData} setUserData={setUserData} />
+            <FulNFinalReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -212,7 +238,7 @@ function App() {
         path="/employee-details-report"
         element={
           <RequireAuth user={userData}>
-            <EmployeeDetailsReport userData={userData} setUserData={setUserData} />
+            <EmployeeDetailsReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -221,7 +247,7 @@ function App() {
         path="/out-duty"
         element={
           <RequireAuth user={userData}>
-            <OutDuty userData={userData} setUserData={setUserData} />
+            <OutDuty userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -230,7 +256,7 @@ function App() {
         path="/settings"
         element={
           <RequireAuth user={userData}>
-            <Settings userData={userData} setUserData={setUserData} />
+            <Settings userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -239,7 +265,7 @@ function App() {
         path="/privacy-policy"
         element={
           <RequireAuth user={userData}>
-            <PrivacyPolicy userData={userData} setUserData={setUserData} />
+            <PrivacyPolicy userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -248,7 +274,7 @@ function App() {
         path="/terms-of-service"
         element={
           <RequireAuth user={userData}>
-            <TermsOfService userData={userData} setUserData={setUserData} />
+            <TermsOfService userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -257,7 +283,7 @@ function App() {
         path="/holiday-master"
         element={
           <RequireAuth user={userData}>
-            <HolidayMaster userData={userData} setUserData={setUserData} />
+            <HolidayMaster userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />

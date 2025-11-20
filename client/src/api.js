@@ -1,8 +1,7 @@
-
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://49.249.199.62:5000/api',
+  baseURL: '/api', // IIS will proxy /api → http://127.0.0.1:5000/api
 });
 
 export default api;
