@@ -27,18 +27,42 @@ const HolidayMaster = ({ userData, setUserData }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
-    finYear: 'FY202526'
+    finYear: ''
   });
   const [branchCode, setBranchCode] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('cards');
-
-  const finYearOptions = [
+  const [finYearOptions, setFinYearOptions] = useState([
     { value: 'FY202324', label: 'FY 2023-24' },
     { value: 'FY202425', label: 'FY 2024-25' },
     { value: 'FY202526', label: 'FY 2025-26' },
     { value: 'FY202627', label: 'FY 2026-27' }
-  ];
+  ]);
+
+  const fetchCurrentFinYear = async () => {
+    try {
+      // Format current date as YYYYMMDD
+      const currentDate = dayjs().format('YYYYMMDD');
+      const res = await axios.get(
+        `/api/financial-year`,
+        {
+          params: { ls_Date: currentDate }
+        }
+      );
+
+      if (res.data.success && res.data.finYear) {
+        const finYear = res.data.finYear;
+        setFilters(prev => ({ ...prev, finYear }));
+      } else {
+        // Fallback to default
+        setFilters(prev => ({ ...prev, finYear: 'FY202526' }));
+      }
+    } catch (err) {
+      console.error('FinYear fetch error:', err);
+      // Fallback to default
+      setFilters(prev => ({ ...prev, finYear: 'FY202526' }));
+    }
+  };
 
   const fetchHolidayData = async () => {
     setLoading(true);
@@ -51,12 +75,18 @@ const HolidayMaster = ({ userData, setUserData }) => {
       return;
     }
 
+    if (!filters.finYear) {
+      setError('Financial year not loaded. Please try again.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/holiday-report`,
+        `/api/holiday-report`,
         {
           params: {
-            ls_BranchId: userData.ls_BrnchId, // Use branch ID from profile
+            ls_BranchId: userData.ls_BrnchId,
             ls_FinYear: filters.finYear
           },
         }
@@ -77,9 +107,15 @@ const HolidayMaster = ({ userData, setUserData }) => {
 
   useEffect(() => {
     if (userData && userData.ls_EMPCODE) {
+      fetchCurrentFinYear();
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (userData && userData.ls_EMPCODE && filters.finYear) {
       fetchHolidayData();
     }
-  }, [userData, filters.finYear]); // Re-fetch if userData or financial year changes
+  }, [userData, filters.finYear]);
 
   const filteredHolidays = holidayData.filter(holiday =>
     holiday.reason.toLowerCase().includes(searchTerm.toLowerCase())

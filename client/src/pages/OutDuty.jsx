@@ -51,7 +51,12 @@ const OutDuty = ({ userData, setUserData }) => {
         try {
           const permission = await navigator.permissions.query({ name: 'geolocation' });
           if (permission.state === 'denied') {
-            throw new Error('Location access is denied. Please enable location permissions in your browser settings.');
+            setMessage({
+              type: 'error',
+              text: 'Location access denied. Please enable location in your browser settings or use manual coordinates below.'
+            });
+            setLocationLoading(false);
+            return;
           }
         } catch (permError) {
           console.warn('Permission API not available:', permError);
@@ -60,9 +65,9 @@ const OutDuty = ({ userData, setUserData }) => {
 
       const position = await new Promise((resolve, reject) => {
         const options = {
-          enableHighAccuracy: false, // Changed to false for better compatibility
-          timeout: 30000, // Increased timeout
-          maximumAge: 600000 // Increased cache time
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
         };
 
         navigator.geolocation.getCurrentPosition(
@@ -70,10 +75,7 @@ const OutDuty = ({ userData, setUserData }) => {
           (error) => {
             console.error('Geolocation error details:', {
               code: error.code,
-              message: error.message,
-              PERMISSION_DENIED: error.PERMISSION_DENIED,
-              POSITION_UNAVAILABLE: error.POSITION_UNAVAILABLE,
-              TIMEOUT: error.TIMEOUT
+              message: error.message
             });
             reject(error);
           },
@@ -144,25 +146,20 @@ const OutDuty = ({ userData, setUserData }) => {
 
     } catch (error) {
       console.error('Location error:', error);
-      let errorMessage = 'Failed to get current location. ';
+      let errorMessage = '';
       
-      // Handle specific HRESULT error
-      if (error.message && error.message.includes('0xFFFFFC17')) {
-        errorMessage = 'Location service error detected. Please try the following: 1) Enable location services in Windows Settings, 2) Allow location access in your browser, 3) Restart your browser and try again.';
-      } else if (error.code === 1 || error.message.includes('denied')) {
-        errorMessage += 'Please allow location access in your browser and try again.';
+      if (error.code === 1 || error.message.includes('denied')) {
+        errorMessage = 'Location access denied. Please enable location in your browser settings or enter coordinates manually below.';
       } else if (error.code === 2) {
-        errorMessage += 'Location unavailable. Please check your device GPS/location settings.';
+        errorMessage = 'Location unavailable. Please ensure GPS is enabled or use manual coordinates.';
       } else if (error.code === 3) {
-        errorMessage += 'Location request timed out. Please check your internet connection and try again.';
-      } else if (error.message.includes('HRESULT')) {
-        errorMessage = 'Windows location service error. Please enable location services in Windows Settings > Privacy > Location, then restart your browser.';
+        errorMessage = 'Location request timed out. Please try again or enter coordinates manually.';
       } else {
-        errorMessage += 'Please enable location services and try again.';
+        errorMessage = 'Unable to get location. Please allow location access in your browser or enter coordinates manually below.';
       }
       
       setMessage({
-        type: 'error',
+        type: 'warning',
         text: errorMessage
       });
     } finally {

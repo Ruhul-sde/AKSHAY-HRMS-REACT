@@ -24,7 +24,7 @@ const Allowance = ({ userData, setUserData }) => {
   const fetchAllowanceTypes = async () => {
     try {
       setLoadingTypes(true);
-      const response = await axios.get('http://localhost:5000/api/allowance-types');
+      const response = await axios.get('/api/allowance-types');
       if (response.data.success) {
         setAllowanceTypes(response.data.allowanceTypes);
       } else {
@@ -154,7 +154,7 @@ const Allowance = ({ userData, setUserData }) => {
 
       console.log('Submitting allowance with files...');
 
-      const response = await axios.post('http://localhost:5000/api/allowance-apply', formData, {
+      const response = await axios.post('/api/allowance-apply', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

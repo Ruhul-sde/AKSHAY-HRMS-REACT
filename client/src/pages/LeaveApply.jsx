@@ -41,19 +41,25 @@ const LeaveApply = ({ userData, setUserData }) => {
   useEffect(() => {
     const fetchLeaveTypes = async () => {
       if (!userData?.ls_EMPTYPE) {
-        setError('Employee data not available.');
+        setError('Employee type not available.');
         setLoadingLeaveTypes(false);
         return;
       }
+      
+      // Use BPLID if available, otherwise use a default value
+      const bplId = userData?.ls_BrnchId || '01';
+      
       try {
-        const res = await axios.get(`http://localhost:5000/api/leave-types?empType=${userData.ls_EMPTYPE}`);
+        const res = await axios.get(`/api/leave-types?empType=${userData.ls_EMPTYPE}&bplId=${bplId}`);
         if (res.data?.success) {
           setLeaveTypes(res.data.leaveTypes);
+          setError(''); // Clear any previous errors
         } else {
           setError(res.data.message || 'No leave types found.');
         }
       } catch (err) {
-        setError('Failed to load leave types.');
+        console.error('Leave types fetch error:', err);
+        setError(err.response?.data?.message || 'Failed to load leave types.');
       } finally {
         setLoadingLeaveTypes(false);
       }

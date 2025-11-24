@@ -8,18 +8,12 @@ const dropdownItems = {
   leave: [
     { label: 'Apply for Leave', to: '/apply-leave', icon: '📝' },
     { label: 'Leave History', to: '/leave-history', icon: '🕒' },
-    // { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
   ],
-  // loan: [
-  //   { label: 'Apply for Loan', to: '/apply-loan', icon: '💰' },
-  //   { label: 'Loan Status', to: '/loan-status', icon: '📊' },
-  // ],
   reports: [
     { label: 'Leave Report', to: '/leave-report', icon: '📑' },
     { label: 'Pay Structure Report', to: '/pay-structure-report', icon: '💵' },
     { label: 'Annual Summary Report', to: '/annual-summary-report', icon: '📈' },
     { label: 'Monthly Attendance Report', to: '/monthly-attendance-report', icon: '🗓️' },
-    // { label: 'Loan Report', to: '/loan-report', icon: '📋' },
     { label: 'FulNFinal Report', to: '/fulnfinal-report', icon: '🏁' },
     { label: 'Employee Details Report', to: '/employee-details-report', icon: '👥' },
   ]
@@ -57,7 +51,6 @@ const mobileMenuVariants = {
 const Navbar = ({ setUserData, userData }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
-  // const [loanOpen, setLoanOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
@@ -91,7 +84,7 @@ const Navbar = ({ setUserData, userData }) => {
       <div className="flex justify-between items-center max-w-7xl mx-auto">
         {/* Logo Section */}
         <motion.div 
-          className="flex items-center space-x-3"
+          className="flex items-center space-x-2"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
         >
@@ -99,11 +92,11 @@ const Navbar = ({ setUserData, userData }) => {
             <motion.img 
               src={logo} 
               alt="Company Logo" 
-              className="h-9 w-auto mr-3 transition-transform group-hover:scale-105"
+              className="h-8 sm:h-9 w-auto mr-2 sm:mr-3 transition-transform group-hover:scale-105"
               whileHover={{ rotate: 5 }}
               transition={{ duration: 0.3 }}
             />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 bg-clip-text text-transparent">
               AKSHAY HRMS
             </span>
           </NavLink>
@@ -151,13 +144,6 @@ const Navbar = ({ setUserData, userData }) => {
             setOpen={setLeaveOpen}
             items={dropdownItems.leave}
           />
-
-          {/* <Dropdown
-            label="Loan"
-            open={loanOpen}
-            setOpen={setLoanOpen}
-            items={dropdownItems.loan}
-          /> */}
 
           <NavItem to="/allowance">Allowance</NavItem>
 
@@ -304,7 +290,9 @@ const Navbar = ({ setUserData, userData }) => {
           >
             <div className="mt-4 pt-4 border-t border-gray-100">
               <ul className="space-y-1 text-gray-700 font-medium">
-                <MobileNavItem to="/dashboard" setMenuOpen={setMenuOpen}>Dashboard</MobileNavItem>
+                <MobileNavItem to="/dashboard" setMenuOpen={setMenuOpen}>
+                  <span className="text-base">Dashboard</span>
+                </MobileNavItem>
 
                 <MobileDropdown
                   label="Leave"
@@ -312,13 +300,9 @@ const Navbar = ({ setUserData, userData }) => {
                   setMenuOpen={setMenuOpen}
                 />
 
-                <MobileDropdown
-                  label="Loan"
-                  items={dropdownItems.loan}
-                  setMenuOpen={setMenuOpen}
-                />
-
-                <MobileNavItem to="/allowance" setMenuOpen={setMenuOpen}>Allowance</MobileNavItem>
+                <MobileNavItem to="/allowance" setMenuOpen={setMenuOpen}>
+                  <span className="text-base">Allowance</span>
+                </MobileNavItem>
 
                 <MobileNavItem to="/attendance" setMenuOpen={setMenuOpen}>Attendance</MobileNavItem>
 
