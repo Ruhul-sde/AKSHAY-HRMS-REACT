@@ -74,11 +74,11 @@ const Allowance = ({ userData, setUserData }) => {
       ls_FILEPATH: file.name, // Just store the filename for display
       ls_REMARKS: updated[entryIndex].ls_REMARKS || 'File attachment'
     };
-    
+
     if (!updated[entryIndex].lst_ClsAllowenceFileDtl) {
       updated[entryIndex].lst_ClsAllowenceFileDtl = [];
     }
-    
+
     updated[entryIndex].lst_ClsAllowenceFileDtl.push(newFile);
     setAllowanceEntries(updated);
   };
@@ -115,9 +115,12 @@ const Allowance = ({ userData, setUserData }) => {
 
       // Create FormData for file uploads
       const formData = new FormData();
-      
+
+      // Convert month format from YYYY-MM to YYYYMM
+      const monthFormatted = selectedMonth.replace('-', '');
+
       // Add basic form data
-      formData.append('ls_MONTH', selectedMonth);
+      formData.append('ls_MONTH', monthFormatted);
 
       // Process entries and add files
       const processedEntries = allowanceEntries.map((entry, entryIndex) => {
@@ -144,6 +147,9 @@ const Allowance = ({ userData, setUserData }) => {
               });
             }
           });
+        } else {
+          // If no files, set to null to match API format
+          processedEntry.lst_ClsAllowenceFileDtl = null;
         }
 
         return processedEntry;
@@ -154,12 +160,12 @@ const Allowance = ({ userData, setUserData }) => {
 
       console.log('Submitting allowance with files...');
 
-      const response = await axios.post('/api/allowance-apply', formData, {
+      const response = await axios.post('/api/allowance/allowance-apply', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       if (response.data.success) {
         setSuccess(response.data.message || 'Allowance applied successfully!');
         setAllowanceEntries([]);
@@ -194,7 +200,7 @@ const Allowance = ({ userData, setUserData }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
       <Navbar setUserData={setUserData} userData={userData} />
-      
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -211,7 +217,7 @@ const Allowance = ({ userData, setUserData }) => {
             >
               <Coins className="w-12 h-12 text-white" />
             </motion.div>
-            
+
             <h1 className="text-4xl font-bold text-gray-800 mb-4">Allowance Management</h1>
             <p className="text-gray-600 text-lg">Apply for meal allowance, travel allowance, and other reimbursements</p>
           </div>
@@ -222,7 +228,7 @@ const Allowance = ({ userData, setUserData }) => {
               {error}
             </div>
           )}
-          
+
           {success && (
             <div className="mb-6 p-4 bg-green-100 border border-green-300 text-green-700 rounded-lg">
               {success}
@@ -411,7 +417,7 @@ const Allowance = ({ userData, setUserData }) => {
           </div>
         </motion.div>
       </div>
-      
+
       <Footer />
     </div>
   );

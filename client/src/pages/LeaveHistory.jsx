@@ -57,7 +57,7 @@ const LeaveHistory = ({ userData, setUserData }) => {
       const checkedValue = filters.checked ? 'Y' : 'N';
       
       const res = await axios.get(
-        `http://localhost:5000/api/leave-history`,
+        `/api/leave-history`,
         {
           params: {
             ls_EmpCode: userData.ls_EMPCODE,
@@ -139,8 +139,7 @@ const LeaveHistory = ({ userData, setUserData }) => {
 
   const filteredData = leaveData.filter(item =>
     item.leaveName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.reason?.toLowerCase().includes(searchTerm.toLowerCase())
+    item.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const calculateStats = () => {
@@ -149,10 +148,9 @@ const LeaveHistory = ({ userData, setUserData }) => {
       approved: filteredData.filter(item => item.status === 'A').length,
       pending: filteredData.filter(item => item.status === 'P').length,
       rejected: filteredData.filter(item => item.status === 'R').length,
-      totalUsed: filteredData.reduce((sum, item) => sum + (parseFloat(item.usedLeave) || 0), 0),
-      totalAvailable: filteredData.reduce((sum, item) => sum + (parseFloat(item.openLeave) || 0), 0)
+      totalDays: filteredData.reduce((sum, item) => sum + (parseFloat(item.noOfDays) || 0), 0),
+      approvedDays: filteredData.filter(item => item.status === 'A').reduce((sum, item) => sum + (parseFloat(item.noOfDays) || 0), 0)
     };
-    stats.totalBalance = stats.totalAvailable - stats.totalUsed;
     return stats;
   };
 
@@ -219,13 +217,12 @@ const LeaveHistory = ({ userData, setUserData }) => {
         </motion.div>
 
         {/* Stats Cards */}
-        <motion.div variants={cardVariants} className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+        <motion.div variants={cardVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <StatsCard icon={FileText} label="Total Leaves" value={stats.total} color="blue" />
           <StatsCard icon={CheckCircle} label="Approved" value={stats.approved} color="green" />
           <StatsCard icon={Clock} label="Pending" value={stats.pending} color="yellow" />
           <StatsCard icon={XCircle} label="Rejected" value={stats.rejected} color="red" />
-          <StatsCard icon={TrendingUp} label="Total Used" value={stats.totalUsed.toFixed(1)} color="purple" />
-          <StatsCard icon={Sparkles} label="Balance" value={stats.totalBalance.toFixed(1)} color="indigo" />
+          <StatsCard icon={TrendingUp} label="Total Days" value={stats.totalDays.toFixed(1)} color="purple" />
         </motion.div>
 
         {/* Enhanced Filters */}
@@ -433,37 +430,30 @@ const TableView = ({ data, filters, getStatusBadge }) => (
               Leave Details
             </th>
             <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Available
+              Status
             </th>
             <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Used
-            </th>
-            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Balance
+              Days
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Last Used
+              Date Range
             </th>
-            {filters.checked && (
-              <>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Date Range
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Reason
-                </th>
-              </>
-            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
           {data.map((item, i) => {
-            const open = parseFloat(item.openLeave || 0);
-            const used = parseFloat(item.usedLeave || 0);
-            const balance = (open - used).toFixed(2);
+            const parseDate = (dateStr) => {
+              if (!dateStr) return null;
+              // Handle DD-MM-YYYY HH:mm:ss format
+              const parts = dateStr.split(' ')[0].split('-');
+              if (parts.length === 3) {
+                return dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
+              }
+              return dayjs(dateStr);
+            };
+
+            const fromDate = parseDate(item.fromDate);
+            const toDate = parseDate(item.toDate);
 
             return (
               <motion.tr 
@@ -484,45 +474,23 @@ const TableView = ({ data, filters, getStatusBadge }) => (
                   </div>
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <span className="text-sm font-medium text-gray-900">{open}</span>
+                  {getStatusBadge(item.status)}
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <span className="text-sm font-medium text-gray-900">{used}</span>
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span className={`text-sm font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {balance}
-                  </span>
+                  <span className="text-sm font-bold text-gray-900">{item.noOfDays}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-gray-900">
-                    {item.leaveDate ? dayjs(item.leaveDate).format('DD MMM YYYY') : 'Never'}
-                  </span>
-                </td>
-                {filters.checked && (
-                  <>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(item.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {item.fromDate && item.toDate ? (
-                          <div>
-                            <div>{dayjs(item.fromDate).format('DD MMM YYYY')}</div>
-                            {item.fromDate !== item.toDate && (
-                              <div className="text-gray-500">to {dayjs(item.toDate).format('DD MMM YYYY')}</div>
-                            )}
-                          </div>
-                        ) : '-'}
+                  <div className="text-sm text-gray-900">
+                    {fromDate && toDate ? (
+                      <div>
+                        <div>{fromDate.format('DD MMM YYYY')}</div>
+                        {item.fromDate !== item.toDate && (
+                          <div className="text-gray-500">to {toDate.format('DD MMM YYYY')}</div>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900 max-w-xs truncate block">
-                        {item.reason || '-'}
-                      </span>
-                    </td>
-                  </>
-                )}
+                    ) : '-'}
+                  </div>
+                </td>
               </motion.tr>
             );
           })}
@@ -536,9 +504,18 @@ const TableView = ({ data, filters, getStatusBadge }) => (
 const CardsView = ({ data, filters, getStatusBadge }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {data.map((item, i) => {
-      const open = parseFloat(item.openLeave || 0);
-      const used = parseFloat(item.usedLeave || 0);
-      const balance = (open - used).toFixed(2);
+      const parseDate = (dateStr) => {
+        if (!dateStr) return null;
+        // Handle DD-MM-YYYY HH:mm:ss format
+        const parts = dateStr.split(' ')[0].split('-');
+        if (parts.length === 3) {
+          return dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        }
+        return dayjs(dateStr);
+      };
+
+      const fromDate = parseDate(item.fromDate);
+      const toDate = parseDate(item.toDate);
 
       return (
         <motion.div
@@ -556,56 +533,34 @@ const CardsView = ({ data, filters, getStatusBadge }) => (
               </h3>
               <p className="text-sm text-gray-500">{item.leaveType}</p>
             </div>
-            {filters.checked && item.status && (
+            {item.status && (
               <div className="ml-3">
                 {getStatusBadge(item.status)}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="text-center p-3 bg-blue-50 rounded-xl">
-              <div className="text-sm text-blue-600 font-medium">Available</div>
-              <div className="text-lg font-bold text-blue-700">{open}</div>
-            </div>
-            <div className="text-center p-3 bg-orange-50 rounded-xl">
-              <div className="text-sm text-orange-600 font-medium">Used</div>
-              <div className="text-lg font-bold text-orange-700">{used}</div>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-xl">
-              <div className="text-sm text-green-600 font-medium">Balance</div>
-              <div className={`text-lg font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {balance}
-              </div>
-            </div>
+          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl mb-4">
+            <div className="text-sm text-blue-600 font-medium mb-1">Number of Days</div>
+            <div className="text-2xl font-bold text-blue-700">{item.noOfDays}</div>
           </div>
 
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Last Used:</span>
-              <span className="font-medium text-gray-800">
-                {item.leaveDate ? dayjs(item.leaveDate).format('DD MMM YYYY') : 'Never'}
-              </span>
-            </div>
-
-            {filters.checked && (
-              <>
-                {item.fromDate && item.toDate && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Date Range:</span>
-                    <span className="font-medium text-gray-800">
-                      {dayjs(item.fromDate).format('DD MMM YYYY')}
-                      {item.fromDate !== item.toDate && ` - ${dayjs(item.toDate).format('DD MMM YYYY')}`}
-                    </span>
-                  </div>
-                )}
-                {item.reason && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <span className="text-gray-600">Reason:</span>
-                    <p className="text-gray-800 mt-1 text-sm">{item.reason}</p>
-                  </div>
-                )}
-              </>
+            {fromDate && toDate && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">From:</span>
+                <span className="font-medium text-gray-800">
+                  {fromDate.format('DD MMM YYYY')}
+                </span>
+              </div>
+            )}
+            {toDate && item.fromDate !== item.toDate && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">To:</span>
+                <span className="font-medium text-gray-800">
+                  {toDate.format('DD MMM YYYY')}
+                </span>
+              </div>
             )}
           </div>
         </motion.div>

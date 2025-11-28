@@ -7,25 +7,24 @@ const router = express.Router();
 
 // GET HOLIDAY REPORT
 router.get('/holiday-report', async (req, res) => {
-  const { ls_Branch, ls_FinYear } = req.query;
+  const { ls_BranchId, ls_FinYear } = req.query;
   
-  console.log('Holiday Report API - Received params:', { ls_Branch, ls_FinYear });
+  console.log('Holiday Report API - Received params:', { ls_BranchId, ls_FinYear });
   
-  if (!ls_Branch || !ls_FinYear) {
+  if (!ls_BranchId || !ls_FinYear) {
     return res.status(400).json({ 
       success: false, 
-      message: "Branch and Financial Year are required." 
+      message: "Branch ID and Financial Year are required." 
     });
   }
 
   try {
     const { data } = await axios.get(
-      `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${ls_Branch}&FinYear=${ls_FinYear}`
+      `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetHolidayRpt?Branch=${ls_BranchId}&FinYear=${ls_FinYear}`
     );
     
     console.log('Holiday API response:', JSON.stringify(data, null, 2));
     
-    // Assuming the API returns data in a similar format to other APIs
     const { l_ClsErrorStatus, lst_ClsHolidayRptDtls = [] } = data;
     
     if (l_ClsErrorStatus?.ls_Status !== "S") {
@@ -36,16 +35,8 @@ router.get('/holiday-report', async (req, res) => {
     }
 
     const holidayData = lst_ClsHolidayRptDtls.map(item => ({
-      holidayId: item.ls_HolidayId,
-      holidayName: item.ls_HolidayName,
-      holidayDate: item.ls_HolidayDate,
-      holidayType: item.ls_HolidayType,
-      description: item.ls_Description,
-      branch: item.ls_Branch,
-      finYear: item.ls_FinYear,
-      dayOfWeek: item.ls_DayOfWeek,
-      isOptional: item.ls_IsOptional,
-      category: item.ls_Category
+      holidayDate: item.ls_HldDate,
+      reason: item.ls_Reason
     }));
 
     return res.json({

@@ -140,13 +140,18 @@ const HolidayMaster = ({ userData, setUserData }) => {
     return 'from-indigo-500 to-purple-500';
   };
 
+  const parseHolidayDate = (dateStr) => {
+    // Parse "DD-MM-YYYY HH:mm:ss" format
+    return dayjs(dateStr, 'DD-MM-YYYY HH:mm:ss');
+  };
+
   const exportToCSV = () => {
     const csvContent = [
       ['Date', 'Holiday', 'Day'],
       ...filteredHolidays.map(holiday => [
-        dayjs(holiday.holidayDate).format('DD-MM-YYYY'), // Proper date format
+        parseHolidayDate(holiday.holidayDate).format('DD-MM-YYYY'),
         holiday.reason,
-        dayjs(holiday.holidayDate).format('dddd')
+        parseHolidayDate(holiday.holidayDate).format('dddd')
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -161,6 +166,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
   const HolidayCard = ({ holiday, index }) => {
     const HolidayIcon = getHolidayIcon(holiday.reason);
     const colorGradient = getHolidayColor(holiday.reason);
+    const holidayDate = parseHolidayDate(holiday.holidayDate);
 
     return (
       <motion.div
@@ -178,10 +184,10 @@ const HolidayMaster = ({ userData, setUserData }) => {
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-gray-800">
-                {dayjs(holiday.holidayDate).format('DD')}
+                {holidayDate.format('DD')}
               </div>
               <div className="text-sm text-gray-500 uppercase tracking-wide">
-                {dayjs(holiday.holidayDate).format('MMM')}
+                {holidayDate.format('MMM')}
               </div>
             </div>
           </div>
@@ -193,11 +199,11 @@ const HolidayMaster = ({ userData, setUserData }) => {
           <div className="flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              {dayjs(holiday.holidayDate).format('dddd')}
+              {holidayDate.format('dddd')}
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {dayjs(holiday.holidayDate).format('YYYY')}
+              {holidayDate.format('YYYY')}
             </div>
           </div>
         </div>
@@ -229,6 +235,7 @@ const HolidayMaster = ({ userData, setUserData }) => {
             {filteredHolidays.map((holiday, index) => {
               const HolidayIcon = getHolidayIcon(holiday.reason);
               const colorGradient = getHolidayColor(holiday.reason);
+              const holidayDate = parseHolidayDate(holiday.holidayDate);
 
               return (
                 <motion.tr
@@ -245,14 +252,14 @@ const HolidayMaster = ({ userData, setUserData }) => {
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-gray-900">
-                          {dayjs(holiday.holidayDate).format('DD MMM YYYY')}
+                          {holidayDate.format('DD MMM YYYY')}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-600">
-                      {dayjs(holiday.holidayDate).format('dddd')}
+                      {holidayDate.format('dddd')}
                     </span>
                   </td>
                   <td className="px-6 py-4">

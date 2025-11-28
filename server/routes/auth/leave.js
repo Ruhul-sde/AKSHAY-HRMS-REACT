@@ -77,22 +77,23 @@ router.get('/leave-history', async (req, res) => {
   const checked = ls_Check || 'N';
   const status = ls_Status || 'ALL';
   try {
-    const { data } = await axios.get(`${BASE_URL}/GetLeaveHistory?EMPCode=${ls_EmpCode}&Date=${ls_DocDate}&Checked=${checked}&Status=${status}`);
+    const url = `http://localhost:84/ASTL_HRMS_WCF.WCF_ASTL_HRMS.svc/GetLeaveHistory?EMPCode=${ls_EmpCode}&Date=${ls_DocDate}&Checked=${checked}&Status=${status}`;
+    const { data } = await axios.get(url);
     const { l_ClsErrorStatus, lst_ClsLeavHstryDtls = [] } = data;
-    if (l_ClsErrorStatus?.ls_Status !== "S") {
+    
+    if (l_ClsErrorStatus?.li_ErrorCode !== 0) {
       return res.status(400).json({ success: false, message: l_ClsErrorStatus?.ls_Message || "Failed to fetch leave history" });
     }
+    
     const history = lst_ClsLeavHstryDtls.map(item => ({
       leaveType: item.ls_LeavTyp,
       leaveName: item.ls_LeavName,
-      leaveDate: item.ls_LeavDate?.split(' ')[0],
-      openLeave: parseFloat(item.ls_OpenLeav) || 0,
-      usedLeave: parseFloat(item.ls_UsedLeav) || 0,
       status: item.ls_Status || '',
       fromDate: item.ls_FromDate || '',
       toDate: item.ls_ToDate || '',
-      reason: item.ls_Reason || ''
+      noOfDays: parseFloat(item.ls_NoOfDays) || 0
     }));
+    
     return res.json({ success: true, message: "Leave history fetched successfully", leaveHistory: history });
   } catch (err) {
     return handleApiError(res, err, "Failed to fetch leave history");
