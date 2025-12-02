@@ -47,8 +47,8 @@ router.get('/attendance', async (req, res) => {
 
 // GET MONTHLY ATTENDANCE REPORT
 router.get('/monthly-attendance', async (req, res) => {
-  const { ls_FromDate, ls_ToDate, ls_EmpType, ls_EmpCode } = req.query;
-  console.log('Monthly Attendance API - Received params:', { ls_FromDate, ls_ToDate, ls_EmpType, ls_EmpCode });
+  const { ls_FromDate, ls_ToDate, ls_EmpCode } = req.query;
+  console.log('Monthly Attendance API - Received params:', { ls_FromDate, ls_ToDate, ls_EmpCode });
   
   if (!ls_FromDate || !ls_ToDate || !ls_EmpCode) {
     return res.status(400).json({ 
@@ -59,7 +59,7 @@ router.get('/monthly-attendance', async (req, res) => {
 
   try {
     const { data } = await axios.get(
-      `${BASE_URL}/GetMnthlyAttndRpt?FromDate=${ls_FromDate}&ToDate=${ls_ToDate}&EmpType=${ls_EmpType || ''}&EMPCode=${ls_EmpCode}`
+      `${BASE_URL}/GetMnthlyAttndRpt?FromDate=${ls_FromDate}&ToDate=${ls_ToDate}&EMPCode=${ls_EmpCode}`
     );
     
     const { l_ClsErrorStatus, lst_ClsMnthlyAttndncRptDtls = [] } = data;
@@ -76,15 +76,17 @@ router.get('/monthly-attendance', async (req, res) => {
       empName: item.ls_EmpName,
       empType: item.ls_EmpType,
       department: item.ls_Department,
+      bplId: item.ls_BPLID,
+      bplName: item.ls_BPLNAME,
       workDate: item.ls_WorkDate,
       dayName: item.ls_DayName,
       weekDay: item.ls_WeekDay,
-      leaveType: item.ls_LeaveType,
-      inTime: item.ls_InTm,
-      outTime: item.ls_OutTm,
-      totalHours: item.ls_Tothrs,
-      lateMark: item.ls_LateMark,
-      attendanceStatus: item.ls_AttndStatus
+      leaveType: item.ls_LeaveType || '',
+      inTime: item.ls_InTm || '',
+      outTime: item.ls_OutTm || '',
+      totalHours: item.ls_Tothrs || '0',
+      lateMark: item.ls_LateMark || '',
+      attendanceStatus: item.ls_AttndStatus || ''
     }));
 
     return res.json({
