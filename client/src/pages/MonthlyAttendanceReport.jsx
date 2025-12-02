@@ -30,9 +30,7 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     fromDate: dayjs().startOf('month').format('YYYY-MM-DD'),
-    toDate: dayjs().endOf('month').format('YYYY-MM-DD'),
-    empType: '',
-    empCode: userData?.ls_EMPCODE || ''
+    toDate: dayjs().endOf('month').format('YYYY-MM-DD')
   });
   const [viewMode, setViewMode] = useState('table');
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,17 +45,29 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
     setError('');
 
     try {
-      const formattedFromDate = dayjs(filters.fromDate).format('YYYYMMDD');
-      const formattedToDate = dayjs(filters.toDate).format('YYYYMMDD');
+      // Parse dates in YYYY-MM-DD format from date inputs
+      const fromDate = dayjs(filters.fromDate, 'YYYY-MM-DD', true);
+      const toDate = dayjs(filters.toDate, 'YYYY-MM-DD', true);
+      
+      if (!fromDate.isValid() || !toDate.isValid()) {
+        setError('Invalid date format. Please select valid dates.');
+        setLoading(false);
+        return;
+      }
+      
+      // Convert to YYYYMMDD format for API
+      const formattedFromDate = fromDate.format('YYYYMMDD');
+      const formattedToDate = toDate.format('YYYYMMDD');
+      
+      console.log('Fetching attendance with dates:', { formattedFromDate, formattedToDate });
       
       const res = await axios.get(
-        `http://localhost:5000/api/monthly-attendance`,
+        `/api/monthly-attendance`,
         {
           params: {
             ls_FromDate: formattedFromDate,
             ls_ToDate: formattedToDate,
-            ls_EmpType: filters.empType,
-            ls_EmpCode: filters.empCode
+            ls_EmpCode: userData.ls_EMPCODE
           },
         }
       );
@@ -82,22 +92,38 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
   }, [userData]);
 
   const filteredData = attendanceData.filter(item =>
-    item.empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.attendanceStatus.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.dayName.toLowerCase().includes(searchTerm.toLowerCase())
+    item.empName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.dayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      'P': { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Present' },
-      'A': { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Absent' },
-      'HD': { color: 'bg-blue-100 text-blue-800', icon: Calendar, label: 'Holiday' },
-      'WO': { color: 'bg-gray-100 text-gray-800', icon: Calendar, label: 'Week Off' },
-      'HF': { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Half Day' },
-      'HD/P': { color: 'bg-purple-100 text-purple-800', icon: CheckCircle, label: 'Holiday Present' }
-    };
-
-    const config = statusConfig[status] || { color: 'bg-gray-100 text-gray-800', icon: AlertCircle, label: status };
+  const getStatusBadge = (item) => {
+    // Determine status based on weekDay, leaveType, and time data
+    let status, config;
+    
+    if (item.weekDay === 'WO') {
+      if (item.inTime && item.outTime) {
+        status = 'WO_PRESENT';
+        config = { color: 'bg-purple-100 text-purple-800', icon: CheckCircle, label: 'Week Off (Present)' };
+      } else {
+        status = 'WO';
+        config = { color: 'bg-gray-100 text-gray-800', icon: Calendar, label: 'Week Off' };
+      }
+    } else if (item.leaveType) {
+      status = 'LEAVE';
+      config = { color: 'bg-orange-100 text-orange-800', icon: Calendar, label: item.leaveType };
+    } else if (item.inTime && item.outTime) {
+      status = 'PRESENT';
+      config = { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Present' };
+    } else if (item.weekDay === 'WD') {
+      status = 'ABSENT';
+      config = { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Absent' };
+    } else {
+      status = 'UNKNOWN';
+      config = { color: 'bg-gray-100 text-gray-800', icon: AlertCircle, label: 'N/A' };
+    }
+    
     const Icon = config.icon;
 
     return (
@@ -111,11 +137,11 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
   const calculateStats = () => {
     const stats = {
       totalDays: filteredData.length,
-      presentDays: filteredData.filter(item => ['P', 'HD/P'].includes(item.attendanceStatus)).length,
-      absentDays: filteredData.filter(item => item.attendanceStatus === 'A').length,
-      halfDays: filteredData.filter(item => item.attendanceStatus === 'HF').length,
-      holidays: filteredData.filter(item => item.attendanceStatus === 'HD').length,
-      weekOffs: filteredData.filter(item => item.attendanceStatus === 'WO').length,
+      presentDays: filteredData.filter(item => item.weekDay === 'WD' && item.inTime && item.outTime && !item.leaveType).length,
+      absentDays: filteredData.filter(item => item.weekDay === 'WD' && !item.inTime && !item.outTime && !item.leaveType).length,
+      leaveDays: filteredData.filter(item => item.leaveType).length,
+      weekOffs: filteredData.filter(item => item.weekDay === 'WO' && !item.inTime && !item.outTime).length,
+      weekOffPresent: filteredData.filter(item => item.weekDay === 'WO' && item.inTime && item.outTime).length,
       lateMarks: filteredData.filter(item => item.lateMark === 'Y').length,
       totalHours: filteredData.reduce((sum, item) => sum + (parseFloat(item.totalHours) || 0), 0)
     };
@@ -190,7 +216,7 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
             <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
               <input
@@ -207,31 +233,6 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
                 type="date"
                 value={filters.toDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Employee Type</label>
-              <select
-                value={filters.empType}
-                onChange={(e) => setFilters(prev => ({ ...prev, empType: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                <option value="Staff">Staff</option>
-                <option value="Management">Management</option>
-                <option value="Contract">Contract</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Employee Code</label>
-              <input
-                type="text"
-                value={filters.empCode}
-                onChange={(e) => setFilters(prev => ({ ...prev, empCode: e.target.value }))}
-                placeholder="Enter employee code"
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -252,14 +253,13 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
         </motion.div>
 
         {/* Stats Cards */}
-        <motion.div variants={cardVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <motion.div variants={cardVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           <StatsCard icon={Calendar} label="Total Days" value={stats.totalDays} color="text-blue-600" bgColor="bg-blue-50" />
           <StatsCard icon={CheckCircle} label="Present" value={stats.presentDays} color="text-green-600" bgColor="bg-green-50" />
           <StatsCard icon={XCircle} label="Absent" value={stats.absentDays} color="text-red-600" bgColor="bg-red-50" />
-          <StatsCard icon={Clock} label="Half Days" value={stats.halfDays} color="text-yellow-600" bgColor="bg-yellow-50" />
-          <StatsCard icon={Calendar} label="Holidays" value={stats.holidays} color="text-purple-600" bgColor="bg-purple-50" />
+          <StatsCard icon={Calendar} label="On Leave" value={stats.leaveDays} color="text-orange-600" bgColor="bg-orange-50" />
           <StatsCard icon={Calendar} label="Week Offs" value={stats.weekOffs} color="text-gray-600" bgColor="bg-gray-50" />
-          <StatsCard icon={AlertCircle} label="Late Marks" value={stats.lateMarks} color="text-orange-600" bgColor="bg-orange-50" />
+          <StatsCard icon={AlertCircle} label="Late Marks" value={stats.lateMarks} color="text-yellow-600" bgColor="bg-yellow-50" />
           <StatsCard icon={TrendingUp} label="Total Hours" value={stats.totalHours.toFixed(2)} color="text-indigo-600" bgColor="bg-indigo-50" />
         </motion.div>
 
@@ -380,14 +380,14 @@ const TableView = ({ data, getStatusBadge }) => (
             >
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900">
-                  {dayjs(item.workDate).format('DD MMM YYYY')}
+                  {dayjs(item.workDate, 'DD-MM-YYYY HH:mm:ss').format('DD-MM-YYYY')}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-600">{item.dayName}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(item.attendanceStatus)}
+                {getStatusBadge(item)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-900">{item.inTime || '-'}</div>
@@ -431,12 +431,12 @@ const CardsView = ({ data, getStatusBadge }) => (
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-              {dayjs(item.workDate).format('DD MMM YYYY')}
+              {dayjs(item.workDate, 'DD-MM-YYYY HH:mm:ss').format('DD-MM-YYYY')}
             </h3>
             <p className="text-sm text-gray-500">{item.dayName}</p>
           </div>
           <div className="ml-3">
-            {getStatusBadge(item.attendanceStatus)}
+            {getStatusBadge(item)}
           </div>
         </div>
 

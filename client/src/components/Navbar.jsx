@@ -8,6 +8,7 @@ const dropdownItems = {
   leave: [
     { label: 'Apply for Leave', to: '/apply-leave', icon: '📝' },
     { label: 'Leave History', to: '/leave-history', icon: '🕒' },
+    { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
   ],
   reports: [
     { label: 'Leave Report', to: '/leave-report', icon: '📑' },

@@ -1,506 +1,318 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Calendar,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  CalendarDays,
-  PartyPopper,
-  Building2,
-  Grid3X3,
-  List,
-  FileText,
-  Clock,
-  Gift,
-  Star,
-  MapPin,
-  Sparkles
-} from 'lucide-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import { Calendar, Loader2, AlertCircle, RefreshCw, ChevronRight, Clock, CalendarDays } from 'lucide-react';
 
 const HolidayMaster = ({ userData, setUserData }) => {
-  const [holidayData, setHolidayData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({
-    finYear: ''
-  });
-  const [branchCode, setBranchCode] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('cards');
-  const [finYearOptions, setFinYearOptions] = useState([
-    { value: 'FY202324', label: 'FY 2023-24' },
-    { value: 'FY202425', label: 'FY 2024-25' },
-    { value: 'FY202526', label: 'FY 2025-26' },
-    { value: 'FY202627', label: 'FY 2026-27' }
-  ]);
+  const [financialYears, setFinancialYears] = useState([]);
+  const [selectedFinYear, setSelectedFinYear] = useState('');
 
-  const fetchCurrentFinYear = async () => {
-    try {
-      // Format current date as YYYYMMDD
-      const currentDate = dayjs().format('YYYYMMDD');
-      const res = await axios.get(
-        `/api/financial-year`,
-        {
-          params: { ls_Date: currentDate }
-        }
-      );
+  useEffect(() => {
+    fetchFinancialYears();
+  }, []);
 
-      if (res.data.success && res.data.finYear) {
-        const finYear = res.data.finYear;
-        setFilters(prev => ({ ...prev, finYear }));
-      } else {
-        // Fallback to default
-        setFilters(prev => ({ ...prev, finYear: 'FY202526' }));
-      }
-    } catch (err) {
-      console.error('FinYear fetch error:', err);
-      // Fallback to default
-      setFilters(prev => ({ ...prev, finYear: 'FY202526' }));
-    }
-  };
-
-  const fetchHolidayData = async () => {
+  const fetchFinancialYears = async () => {
     setLoading(true);
     setError('');
 
-    // Check if we have branch ID from profile
-    if (!userData?.ls_BrnchId) {
-      setError('Branch ID not found in profile. Please contact administrator.');
-      setLoading(false);
-      return;
-    }
-
-    if (!filters.finYear) {
-      setError('Financial year not loaded. Please try again.');
-      setLoading(false);
-      return;
-    }
-
     try {
+      const currentDate = dayjs().format('YYYYMMDD');
       const res = await axios.get(
-        `/api/holiday-report`,
-        {
-          params: {
-            ls_BranchId: userData.ls_BrnchId,
-            ls_FinYear: filters.finYear
-          },
-        }
+        `http://localhost:5000/api/holiday/financial-year?ls_Date=${currentDate}`,
+        { timeout: 10000 }
       );
 
       if (res.data.success) {
-        setHolidayData(res.data.holidayData || []);
+        setFinancialYears(res.data.financialYears);
+        if (res.data.financialYears.length > 0) {
+          setSelectedFinYear(res.data.financialYears[0].finYear);
+        }
       } else {
-        setError(res.data.message || 'Failed to fetch holiday data');
+        setError(res.data.message || 'Failed to fetch financial years');
       }
     } catch (err) {
-      console.error('Holiday fetch error:', err);
-      setError(err.response?.data?.message || 'Failed to fetch holiday data');
+      console.error('Error fetching financial years:', err);
+      setError(err.response?.data?.message || 'Unable to connect to the server. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (userData && userData.ls_EMPCODE) {
-      fetchCurrentFinYear();
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
     }
-  }, [userData]);
-
-  useEffect(() => {
-    if (userData && userData.ls_EMPCODE && filters.finYear) {
-      fetchHolidayData();
-    }
-  }, [userData, filters.finYear]);
-
-  const filteredHolidays = holidayData.filter(holiday =>
-    holiday.reason.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getHolidayIcon = (reason) => {
-    const lowerReason = reason.toLowerCase();
-    if (lowerReason.includes('diwali') || lowerReason.includes('festival')) return Gift;
-    if (lowerReason.includes('independence') || lowerReason.includes('republic')) return Star;
-    if (lowerReason.includes('ganesh') || lowerReason.includes('holi')) return PartyPopper;
-    if (lowerReason.includes('gandhi')) return MapPin;
-    return CalendarDays;
   };
 
-  const getHolidayColor = (reason) => {
-    const lowerReason = reason.toLowerCase();
-    if (lowerReason.includes('diwali')) return 'from-orange-500 to-red-500';
-    if (lowerReason.includes('holi')) return 'from-pink-500 to-purple-500';
-    if (lowerReason.includes('independence') || lowerReason.includes('republic')) return 'from-blue-500 to-green-500';
-    if (lowerReason.includes('ganesh')) return 'from-yellow-500 to-orange-500';
-    if (lowerReason.includes('gandhi')) return 'from-gray-500 to-blue-500';
-    return 'from-indigo-500 to-purple-500';
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
   };
 
-  const parseHolidayDate = (dateStr) => {
-    // Parse "DD-MM-YYYY HH:mm:ss" format
-    return dayjs(dateStr, 'DD-MM-YYYY HH:mm:ss');
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    return dayjs(dateStr, 'YYYYMMDD').format('DD MMM YYYY');
   };
 
-  const exportToCSV = () => {
-    const csvContent = [
-      ['Date', 'Holiday', 'Day'],
-      ...filteredHolidays.map(holiday => [
-        parseHolidayDate(holiday.holidayDate).format('DD-MM-YYYY'),
-        holiday.reason,
-        parseHolidayDate(holiday.holidayDate).format('dddd')
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `holidays_${filters.finYear}_${userData?.ls_EMPCODE || 'N/A'}.csv`;
-    link.click();
+  const calculateDuration = (fromDate, toDate) => {
+    if (!fromDate || !toDate) return 'N/A';
+    const from = dayjs(fromDate, 'YYYYMMDD');
+    const to = dayjs(toDate, 'YYYYMMDD');
+    const days = to.diff(from, 'day') + 1;
+    return `${days} days`;
   };
-
-  const HolidayCard = ({ holiday, index }) => {
-    const HolidayIcon = getHolidayIcon(holiday.reason);
-    const colorGradient = getHolidayColor(holiday.reason);
-    const holidayDate = parseHolidayDate(holiday.holidayDate);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
-        className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 hover:scale-[1.02]"
-      >
-        <div className={`absolute inset-0 bg-gradient-to-r ${colorGradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${colorGradient} flex items-center justify-center shadow-lg`}>
-              <HolidayIcon className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-gray-800">
-                {holidayDate.format('DD')}
-              </div>
-              <div className="text-sm text-gray-500 uppercase tracking-wide">
-                {holidayDate.format('MMM')}
-              </div>
-            </div>
-          </div>
-
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors">
-            {holiday.reason}
-          </h3>
-
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {holidayDate.format('dddd')}
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {holidayDate.format('YYYY')}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
-  const HolidayTable = () => (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wide">
-                Date
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wide">
-                Day
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wide">
-                Holiday
-              </th>
-              <th className="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wide">
-                Type
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredHolidays.map((holiday, index) => {
-              const HolidayIcon = getHolidayIcon(holiday.reason);
-              const colorGradient = getHolidayColor(holiday.reason);
-              const holidayDate = parseHolidayDate(holiday.holidayDate);
-
-              return (
-                <motion.tr
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="hover:bg-gray-50 transition-colors duration-200"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${colorGradient} flex items-center justify-center`}>
-                        <HolidayIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {holidayDate.format('DD MMM YYYY')}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-600">
-                      {holidayDate.format('dddd')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-gray-900">
-                      {holiday.reason}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r ${colorGradient} text-white`}>
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Festival
-                    </span>
-                  </td>
-                </motion.tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Navbar setUserData={setUserData} userData={userData} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
+      
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-6"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                  <CalendarDays className="w-7 h-7 text-white" />
-                </div>
-                Holiday Master
-              </h1>
-              <p className="text-gray-600 mt-2">Manage and view company holidays</p>
-            </div>
+          {/* Header Section */}
+          <motion.div variants={itemVariants} className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"
+            >
+              <Calendar className="w-10 h-10 text-white" />
+            </motion.div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+              Holiday Master
+            </h1>
+            <p className="text-gray-600 text-lg">View and manage company holidays and financial years</p>
+          </motion.div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={exportToCSV}
-                disabled={loading || filteredHolidays.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV
-              </button>
-
-              <button
-                onClick={fetchHolidayData}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Adjusted grid for one less filter */}
-
-            {/* Financial Year Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                Financial Year
-              </label>
-              <select
-                value={filters.finYear}
-                onChange={(e) => setFilters({ ...filters, finYear: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              >
-                {finYearOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Search className="w-4 h-4 inline mr-1" />
-                Search Holidays
-              </label>
-              <input
-                type="text"
-                placeholder="Search by holiday name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-
-            {/* View Mode */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                View Mode
-              </label>
-              <div className="flex rounded-lg overflow-hidden border border-gray-300">
-                <button
-                  onClick={() => setViewMode('cards')}
-                  className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'cards'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Grid3X3 className="w-4 h-4 mx-auto" />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <List className="w-4 h-4 mx-auto" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Results Summary */}
-        {!loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mb-6"
+          {/* Main Content Card */}
+          <motion.div 
+            variants={itemVariants}
+            className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
           >
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-4 text-white">
-              <div className="flex items-center justify-between">
+            {/* Card Header */}
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5" />
-                  <span className="font-medium">
-                    Showing {filteredHolidays.length} of {holidayData.length} holidays
-                  </span>
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <CalendarDays className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">Financial Year Details</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Select a financial year to view details</p>
+                  </div>
                 </div>
-                <div className="text-sm opacity-90">
-                  {filters.finYear} • Branch {userData?.ls_BrnchId || 'N/A'} • Employee {userData?.ls_EMPCODE || 'N/A'}
-                </div>
+
+                {/* Financial Year Selector */}
+                {!loading && financialYears.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                      Financial Year:
+                    </label>
+                    <select
+                      value={selectedFinYear}
+                      onChange={(e) => setSelectedFinYear(e.target.value)}
+                      className="border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white shadow-sm hover:border-blue-400 transition-colors min-w-[180px]"
+                    >
+                      {financialYears.map((fy) => (
+                        <option key={fy.finYear} value={fy.finYear}>
+                          {fy.finYear}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
+            </div>
+            
+            {/* Card Body */}
+            <div className="p-6">
+              <AnimatePresence mode="wait">
+                {loading && (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-16"
+                  >
+                    <div className="relative">
+                      <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                      <motion.div
+                        className="absolute inset-0 w-12 h-12 border-4 border-blue-200 rounded-full"
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mt-6">Loading Financial Years</h3>
+                    <p className="text-gray-500 mt-2">Please wait while we fetch the data...</p>
+                  </motion.div>
+                )}
+
+                {error && !loading && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center justify-center py-16"
+                  >
+                    <div className="text-center max-w-md">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.1, type: "spring" }}
+                        className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                      >
+                        <AlertCircle className="w-10 h-10 text-red-600" />
+                      </motion.div>
+                      <h3 className="text-xl font-bold text-gray-800 mb-3">Unable to Load Financial Years</h3>
+                      <p className="text-gray-600 mb-6">{error}</p>
+                      <motion.button
+                        onClick={fetchFinancialYears}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Try Again
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {!loading && !error && financialYears.length > 0 && (
+                  <motion.div
+                    key="content"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    {financialYears.map((fy) => 
+                      fy.finYear === selectedFinYear && (
+                        <motion.div
+                          key={fy.finYear}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="space-y-6"
+                        >
+                          {/* Info Cards Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Financial Year Card */}
+                            <motion.div
+                              whileHover={{ y: -4 }}
+                              className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                  <Calendar className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-semibold text-blue-900">Financial Year</h3>
+                              </div>
+                              <p className="text-2xl font-bold text-blue-900">{fy.finYear}</p>
+                            </motion.div>
+
+                            {/* Start Date Card */}
+                            <motion.div
+                              whileHover={{ y: -4 }}
+                              className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                                  <ChevronRight className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-semibold text-green-900">Start Date</h3>
+                              </div>
+                              <p className="text-xl font-bold text-green-900">{formatDate(fy.fromDate)}</p>
+                            </motion.div>
+
+                            {/* End Date Card */}
+                            <motion.div
+                              whileHover={{ y: -4 }}
+                              className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                                  <Clock className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-semibold text-purple-900">End Date</h3>
+                              </div>
+                              <p className="text-xl font-bold text-purple-900">{formatDate(fy.toDate)}</p>
+                            </motion.div>
+                          </div>
+
+                          {/* Detailed Information */}
+                          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                              <CalendarDays className="w-5 h-5 text-gray-600" />
+                              Period Summary
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                <p className="text-sm text-gray-600 mb-1">Duration</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                  {calculateDuration(fy.fromDate, fy.toDate)}
+                                </p>
+                              </div>
+                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                <p className="text-sm text-gray-600 mb-1">Status</p>
+                                <p className="text-lg font-semibold text-green-600 flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                  Active
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
+                    )}
+                  </motion.div>
+                )}
+
+                {!loading && !error && financialYears.length === 0 && (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-16"
+                  >
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                      <Calendar className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Financial Years Found</h3>
+                    <p className="text-gray-500 mb-6">There are no financial years available at the moment.</p>
+                    <motion.button
+                      onClick={fetchFinancialYears}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Refresh
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
-        )}
-
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center py-20"
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600 font-medium">Loading holidays...</p>
-              </div>
-            </motion.div>
-          ) : error ? (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-20"
-            >
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md mx-auto">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CalendarDays className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Holidays</h3>
-                <p className="text-red-600 mb-4">{error}</p>
-                <button
-                  onClick={fetchHolidayData}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </motion.div>
-          ) : filteredHolidays.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-20"
-            >
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 max-w-md mx-auto">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">No Holidays Found</h3>
-                <p className="text-gray-600">Try adjusting your search criteria or filters.</p>
-              </div>
-            </motion.div>
-          ) : viewMode === 'cards' ? (
-            <motion.div
-              key="cards"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredHolidays.map((holiday, index) => (
-                <HolidayCard key={index} holiday={holiday} index={index} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="table"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <HolidayTable />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </motion.div>
       </div>
+
+      <Footer />
     </div>
   );
 };
