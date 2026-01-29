@@ -17,13 +17,15 @@ import LeaveReport from './pages/reports/Leave Report';
 import PayStructureReport from './pages/reports/Pay Structure Report';
 import AnnualSummaryReport from './pages/reports/Annual Summary Report';
 import LoanReport from './pages/reports/Loan Report';
-import FulNFinalReport from './pages/reports/FulNFinal Report';
+import RAWAttendanceReport from './pages/reports/RAWAttendanceReport';
 import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 import OutDuty from './pages/OutDuty';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HolidayMaster from './pages/HolidayMaster';
+import SalarySlip from './pages/SalarySlip';
+
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -126,14 +128,14 @@ function App() {
         }
       />
 
-      <Route
+      {/* <Route
         path="/pending-leaves"
         element={
           <RequireAuth user={userData}>
             <PendingLeaves userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
-      />
+      /> */}
 
       <Route
         path="/apply-loan"
@@ -170,6 +172,19 @@ function App() {
           </RequireAuth>
         }
       />
+      <Route
+  path="/salary-slip"
+  element={
+    <RequireAuth user={userData}>
+      <SalarySlip
+        userData={userData}
+        setUserData={setUserData}
+        apiFetch={apiFetch}
+      />
+    </RequireAuth>
+  }
+/>
+
 
       <Route
         path="/profile"
@@ -229,7 +244,7 @@ function App() {
         path="/fulnfinal-report"
         element={
           <RequireAuth user={userData}>
-            <FulNFinalReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
+            <RAWAttendanceReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />

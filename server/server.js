@@ -15,7 +15,7 @@ console.log('Loaded ENV (sample):', {
 });
 
 const app = express();
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = Number(process.env.PORT) || 5001;
 
 // Allowed origins - include your frontend public IP (change if different)
 const allowedOrigins = [
@@ -23,6 +23,10 @@ const allowedOrigins = [
   'http://localhost:85',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'https://hrms.miraclecables.com',
+  'http://hrms.miraclecables.com',
+  'https://ruhulamin.tech',
+  'http://ruhulamin.tech',
   'http://127.0.0.1:85',
   `http://${process.env.PUBLIC_IP || '49.249.199.62'}:85`
 ].filter(Boolean);

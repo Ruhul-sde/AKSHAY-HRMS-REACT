@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,18 +21,36 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import Navbar from '../components/Navbar';
+
+// Add custom parse format plugin to dayjs
+dayjs.extend(customParseFormat);
 
 const MonthlyAttendanceReport = ({ userData, setUserData }) => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Initialize with current month in DD-MM-YYYY format
   const [filters, setFilters] = useState({
-    fromDate: dayjs().startOf('month').format('YYYY-MM-DD'),
-    toDate: dayjs().endOf('month').format('YYYY-MM-DD')
+    fromDate: dayjs().startOf('month').format('DD-MM-YYYY'),
+    toDate: dayjs().endOf('month').format('DD-MM-YYYY')
   });
   const [viewMode, setViewMode] = useState('table');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFromCalendar, setShowFromCalendar] = useState(false);
+  const [showToCalendar, setShowToCalendar] = useState(false);
+
+  // Create axios instance with base URL configuration
+  const api = axios.create({
+    baseURL: process.env.NODE_ENV === 'production' 
+      ? 'https://49.249.199.62:89/api' 
+      : '', // Empty for development (proxy will handle)
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
 
   const fetchMonthlyAttendance = async () => {
     if (!userData?.ls_EMPCODE) {
@@ -45,12 +62,12 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
     setError('');
 
     try {
-      // Parse dates in YYYY-MM-DD format from date inputs
-      const fromDate = dayjs(filters.fromDate, 'YYYY-MM-DD', true);
-      const toDate = dayjs(filters.toDate, 'YYYY-MM-DD', true);
+      // Parse dates from DD-MM-YYYY format
+      const fromDate = dayjs(filters.fromDate, 'DD-MM-YYYY', true);
+      const toDate = dayjs(filters.toDate, 'DD-MM-YYYY', true);
       
       if (!fromDate.isValid() || !toDate.isValid()) {
-        setError('Invalid date format. Please select valid dates.');
+        setError('Invalid date format. Please use DD-MM-YYYY format.');
         setLoading(false);
         return;
       }
@@ -59,18 +76,21 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
       const formattedFromDate = fromDate.format('YYYYMMDD');
       const formattedToDate = toDate.format('YYYYMMDD');
       
-      console.log('Fetching attendance with dates:', { formattedFromDate, formattedToDate });
+      console.log('Fetching attendance with dates:', { 
+        fromDate: filters.fromDate, 
+        toDate: filters.toDate,
+        formattedFromDate, 
+        formattedToDate 
+      });
       
-      const res = await axios.get(
-        `/api/monthly-attendance`,
-        {
-          params: {
-            ls_FromDate: formattedFromDate,
-            ls_ToDate: formattedToDate,
-            ls_EmpCode: userData.ls_EMPCODE
-          },
+      // Use relative path - axios will use proxy in development
+      const res = await api.get('/monthly-attendance', {
+        params: {
+          ls_FromDate: formattedFromDate,
+          ls_ToDate: formattedToDate,
+          ls_EmpCode: userData.ls_EMPCODE
         }
-      );
+      });
 
       if (res.data.success) {
         setAttendanceData(res.data.attendanceData);
@@ -79,7 +99,10 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
       }
     } catch (err) {
       console.error('Error fetching monthly attendance:', err);
-      setError(err.response?.data?.message || 'Failed to fetch attendance data');
+      const errorMessage = err.response?.data?.message || 
+                          err.message || 
+                          'Failed to fetch attendance data. Please check your connection.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,6 +114,168 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
     }
   }, [userData]);
 
+  // Handle click outside to close calendar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFromCalendar && !event.target.closest('.from-calendar-container')) {
+        setShowFromCalendar(false);
+      }
+      if (showToCalendar && !event.target.closest('.to-calendar-container')) {
+        setShowToCalendar(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFromCalendar, showToCalendar]);
+
+  const handleDateSelect = (date, isFromDate = true) => {
+    const formattedDate = dayjs(date).format('DD-MM-YYYY');
+    if (isFromDate) {
+      setFilters(prev => ({ ...prev, fromDate: formattedDate }));
+      setShowFromCalendar(false);
+    } else {
+      setFilters(prev => ({ ...prev, toDate: formattedDate }));
+      setShowToCalendar(false);
+    }
+  };
+
+  const generateCalendarDays = (dateString, isFromDate = true) => {
+    const currentDate = dayjs(dateString, 'DD-MM-YYYY', true).isValid() 
+      ? dayjs(dateString, 'DD-MM-YYYY')
+      : dayjs();
+    
+    const monthStart = currentDate.startOf('month');
+    const monthEnd = currentDate.endOf('month');
+    const startDate = monthStart.startOf('week');
+    const endDate = monthEnd.endOf('week');
+    
+    const calendarDays = [];
+    let day = startDate;
+    
+    while (day <= endDate) {
+      calendarDays.push(day);
+      day = day.add(1, 'day');
+    }
+    
+    const weeks = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      weeks.push(calendarDays.slice(i, i + 7));
+    }
+    
+    return (
+      <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <button 
+            onClick={() => {
+              const newDate = currentDate.subtract(1, 'month');
+              const formattedDate = newDate.format('DD-MM-YYYY');
+              if (isFromDate) {
+                setFilters(prev => ({ ...prev, fromDate: formattedDate }));
+              } else {
+                setFilters(prev => ({ ...prev, toDate: formattedDate }));
+              }
+            }}
+            className="p-1 hover:bg-gray-100 rounded-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="text-sm font-semibold text-gray-700">
+            {currentDate.format('MMMM YYYY')}
+          </div>
+          <button 
+            onClick={() => {
+              const newDate = currentDate.add(1, 'month');
+              const formattedDate = newDate.format('DD-MM-YYYY');
+              if (isFromDate) {
+                setFilters(prev => ({ ...prev, fromDate: formattedDate }));
+              } else {
+                setFilters(prev => ({ ...prev, toDate: formattedDate }));
+              }
+            }}
+            className="p-1 hover:bg-gray-100 rounded-lg"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, index) => (
+            <div key={index} className="text-center text-xs font-medium text-gray-500 py-1">
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1">
+          {weeks.map((week, weekIndex) => (
+            <React.Fragment key={weekIndex}>
+              {week.map((day, dayIndex) => {
+                const isCurrentMonth = day.month() === currentDate.month();
+                const isSelected = day.format('DD-MM-YYYY') === (isFromDate ? filters.fromDate : filters.toDate);
+                const isToday = day.isSame(dayjs(), 'day');
+                
+                return (
+                  <button
+                    key={dayIndex}
+                    onClick={() => handleDateSelect(day, isFromDate)}
+                    disabled={!isCurrentMonth}
+                    className={`
+                      w-8 h-8 text-sm rounded-lg flex items-center justify-center
+                      ${!isCurrentMonth ? 'text-gray-300 cursor-default' : ''}
+                      ${isSelected ? 'bg-blue-600 text-white font-semibold' : ''}
+                      ${isToday && !isSelected ? 'border-2 border-blue-400' : ''}
+                      ${isCurrentMonth && !isSelected ? 'hover:bg-blue-50 hover:text-blue-700' : ''}
+                    `}
+                  >
+                    {day.date()}
+                  </button>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
+        
+        <div className="mt-4 pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Selected:</span>
+            <span className="text-sm font-medium text-gray-700">
+              {isFromDate ? filters.fromDate : filters.toDate}
+            </span>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => handleDateSelect(dayjs(), isFromDate)}
+              className="flex-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 py-1.5 px-2 rounded-lg"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => {
+                if (isFromDate) {
+                  setFilters(prev => ({ ...prev, fromDate: dayjs().startOf('month').format('DD-MM-YYYY') }));
+                  setShowFromCalendar(false);
+                } else {
+                  setFilters(prev => ({ ...prev, toDate: dayjs().endOf('month').format('DD-MM-YYYY') }));
+                  setShowToCalendar(false);
+                }
+              }}
+              className="flex-1 text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 py-1.5 px-2 rounded-lg"
+            >
+              {isFromDate ? 'Start of Month' : 'End of Month'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const filteredData = attendanceData.filter(item =>
     item.empName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.dayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,7 +284,6 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
   );
 
   const getStatusBadge = (item) => {
-    // Determine status based on weekDay, leaveType, and time data
     let status, config;
     
     if (item.weekDay === 'WO') {
@@ -216,38 +400,113 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
             <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-              <input
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* From Date Input with Calendar */}
+            <div className="from-calendar-container relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">From Date (DD-MM-YYYY)</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={filters.fromDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, fromDate: e.target.value }))}
+                  placeholder="DD-MM-YYYY"
+                  className="w-full pl-3 pr-10 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFromCalendar(!showFromCalendar);
+                    setShowToCalendar(false);
+                  }}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Click calendar icon to select date</p>
+              
+              {/* Calendar Dropdown */}
+              <AnimatePresence>
+                {showFromCalendar && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 mt-2 w-72"
+                  >
+                    {generateCalendarDays(filters.fromDate, true)}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-              <input
-                type="date"
-                value={filters.toDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            {/* To Date Input with Calendar */}
+            <div className="to-calendar-container relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">To Date (DD-MM-YYYY)</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={filters.toDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, toDate: e.target.value }))}
+                  placeholder="DD-MM-YYYY"
+                  className="w-full pl-3 pr-10 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToCalendar(!showToCalendar);
+                    setShowFromCalendar(false);
+                  }}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Click calendar icon to select date</p>
+              
+              {/* Calendar Dropdown */}
+              <AnimatePresence>
+                {showToCalendar && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 mt-2 w-72"
+                  >
+                    {generateCalendarDays(filters.toDate, false)}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <div className="flex flex-col sm:flex-row gap-4 mt-8">
             <motion.button
               onClick={fetchMonthlyAttendance}
               disabled={loading}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-all"
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <Search className="w-4 h-4" />
-              {loading ? 'Searching...' : 'Search'}
+              {loading ? 'Searching...' : 'Search Attendance'}
+            </motion.button>
+            
+            <motion.button
+              onClick={() => {
+                setFilters({
+                  fromDate: dayjs().startOf('month').format('DD-MM-YYYY'),
+                  toDate: dayjs().endOf('month').format('DD-MM-YYYY')
+                });
+              }}
+              className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl transition-all"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Reset to Current Month
             </motion.button>
           </div>
         </motion.div>
@@ -280,15 +539,17 @@ const MonthlyAttendanceReport = ({ userData, setUserData }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 <List className="w-4 h-4" />
+                Table View
               </button>
               <button
                 onClick={() => setViewMode('cards')}
-                className={`p-2 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 <Grid3X3 className="w-4 h-4" />
+                Card View
               </button>
             </div>
           </div>
@@ -370,46 +631,51 @@ const TableView = ({ data, getStatusBadge }) => (
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
-          {data.map((item, i) => (
-            <motion.tr
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="hover:bg-gray-50 transition-colors"
-            >
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
-                  {dayjs(item.workDate, 'DD-MM-YYYY HH:mm:ss').format('DD-MM-YYYY')}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-600">{item.dayName}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(item)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.inTime || '-'}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{item.outTime || '-'}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{item.totalHours || '-'}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {item.lateMark === 'Y' ? (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    <AlertCircle className="w-3 h-3 mr-1" />
-                    Late
-                  </span>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
-              </td>
-            </motion.tr>
-          ))}
+          {data.map((item, i) => {
+            const workDate = item.workDate || '';
+            const displayDate = workDate.split(' ')[0];
+            
+            return (
+              <motion.tr
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {displayDate || '-'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-600">{item.dayName}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getStatusBadge(item)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{item.inTime || '-'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{item.outTime || '-'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{item.totalHours || '-'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {item.lateMark === 'Y' ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      Late
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+              </motion.tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -419,56 +685,61 @@ const TableView = ({ data, getStatusBadge }) => (
 // Cards View Component
 const CardsView = ({ data, getStatusBadge }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {data.map((item, i) => (
-      <motion.div
-        key={i}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: i * 0.05 }}
-        className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group"
-        whileHover={{ y: -4 }}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-              {dayjs(item.workDate, 'DD-MM-YYYY HH:mm:ss').format('DD-MM-YYYY')}
-            </h3>
-            <p className="text-sm text-gray-500">{item.dayName}</p>
+    {data.map((item, i) => {
+      const workDate = item.workDate || '';
+      const displayDate = workDate.split(' ')[0];
+      
+      return (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+          className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group"
+          whileHover={{ y: -4 }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                {displayDate || '-'}
+              </h3>
+              <p className="text-sm text-gray-500">{item.dayName}</p>
+            </div>
+            <div className="ml-3">
+              {getStatusBadge(item)}
+            </div>
           </div>
-          <div className="ml-3">
-            {getStatusBadge(item)}
-          </div>
-        </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">In Time:</span>
-            <span className="font-medium text-gray-800">{item.inTime || '-'}</span>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">In Time:</span>
+              <span className="font-medium text-gray-800">{item.inTime || '-'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Out Time:</span>
+              <span className="font-medium text-gray-800">{item.outTime || '-'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Total Hours:</span>
+              <span className="font-medium text-gray-800">{item.totalHours || '-'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Late Mark:</span>
+              <span className="font-medium text-gray-800">
+                {item.lateMark === 'Y' ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Late
+                  </span>
+                ) : (
+                  '-'
+                )}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Out Time:</span>
-            <span className="font-medium text-gray-800">{item.outTime || '-'}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Total Hours:</span>
-            <span className="font-medium text-gray-800">{item.totalHours || '-'}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Late Mark:</span>
-            <span className="font-medium text-gray-800">
-              {item.lateMark === 'Y' ? (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  Late
-                </span>
-              ) : (
-                '-'
-              )}
-            </span>
-          </div>
-        </div>
-      </motion.div>
-    ))}
+        </motion.div>
+      );
+    })}
   </div>
 );
 

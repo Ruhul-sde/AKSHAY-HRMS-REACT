@@ -8,17 +8,18 @@ const dropdownItems = {
   leave: [
     { label: 'Apply for Leave', to: '/apply-leave', icon: '📝' },
     { label: 'Leave History', to: '/leave-history', icon: '🕒' },
-    { label: 'Pending Leaves', to: '/pending-leaves', icon: '⏳' },
   ],
   reports: [
     { label: 'Leave Report', to: '/leave-report', icon: '📑' },
+    { label: 'Salary Slip', to: '/salary-slip', icon: '🧾' }, // ✅ ADDED
     { label: 'Pay Structure Report', to: '/pay-structure-report', icon: '💵' },
     { label: 'Annual Summary Report', to: '/annual-summary-report', icon: '📈' },
     { label: 'Monthly Attendance Report', to: '/monthly-attendance-report', icon: '🗓️' },
-    { label: 'FulNFinal Report', to: '/fulnfinal-report', icon: '🏁' },
+    { label: 'RAW Attendance Report', to: '/fulnfinal-report', icon: '🏁' },
     { label: 'Employee Details Report', to: '/employee-details-report', icon: '👥' },
   ]
 };
+
 
 // Animation variants (moved outside component to be accessible by child components)
 const dropdownVariants = {

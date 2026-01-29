@@ -43,7 +43,7 @@ const ChangePassword = ({ userData, setUserData }) => {
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/api/change-password', {
+      const res = await axios.post('/api/change-password', {
         ls_EmpCode: userData.ls_EMPCODE,
         ls_OldPassword: form.oldPassword,
         ls_NewPassword: form.newPassword,

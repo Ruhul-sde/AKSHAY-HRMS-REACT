@@ -1,0 +1,352 @@
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
+Error: Cannot find module '../utils'
+Require stack:
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\index.js
+- D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1421:15)
+    at Hook._require.Module.require (C:\Users\Akshay2\AppData\Roaming\npm\node_modules\pm2\node_modules\require-in-the-middle\index.js:81:25)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (D:\ASTL_HRMS (Do Not Delete)\Website Code\Salary Slip working\server\routes\auth\salarySlip.js:5:35)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\salarySlip.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\routes\\auth\\index.js',
+    'D:\\ASTL_HRMS (Do Not Delete)\\Website Code\\Salary Slip working\\server\\server.js'
+  ]
+}
