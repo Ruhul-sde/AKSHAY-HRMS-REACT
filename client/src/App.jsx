@@ -13,19 +13,19 @@ import Help from './pages/Help';
 import Profile from './pages/Profile';
 import Allowance from './pages/Allowance';
 import Attendance from './pages/Attendance';
+import ManualAttendance from './pages/ManualAttendance';
 import LeaveReport from './pages/reports/Leave Report';
 import PayStructureReport from './pages/reports/Pay Structure Report';
 import AnnualSummaryReport from './pages/reports/Annual Summary Report';
 import LoanReport from './pages/reports/Loan Report';
-import RAWAttendanceReport from './pages/reports/RAWAttendanceReport';
+import FulNFinalReport from './pages/reports/FullFinalReport';
 import EmployeeDetailsReport from './pages/reports/Employee Details Report';
 import OutDuty from './pages/OutDuty';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HolidayMaster from './pages/HolidayMaster';
-import SalarySlip from './pages/SalarySlip';
-
+import SalarySlip from './pages/reports/SalarySlip';
 
 const RequireAuth = ({ user, children }) => {
   return user ? children : <Navigate to="/" replace />;
@@ -34,32 +34,26 @@ const RequireAuth = ({ user, children }) => {
 function App() {
   const [userData, setUserData] = useState(null);
 
-  // Direct (no env) API base — use relative path so it works from other devices
-  // (IIS will proxy /api -> node backend). If you prefer absolute, replace '/api' with 'http://49.249.199.62:85'
   const API_BASE = '/api';
 
-  // Simple fetch wrapper that always targets the server (no env usage)
+  // Simple fetch wrapper
   const apiFetch = async (path, options = {}) => {
     const url = `${API_BASE}${path}`;
     try {
       const res = await fetch(url, options);
-      // if caller expects raw Response they can handle it; here we try JSON by default
       const text = await res.text();
-      // if response is JSON-like parse it, else return text
       try {
         return JSON.parse(text);
       } catch {
-        // not JSON, return text or original response depending on status
         if (!res.ok) throw new Error(text || res.statusText);
         return text;
       }
     } catch (err) {
-      // bubble up a descriptive error
       throw new Error(`apiFetch error (${url}): ${err.message}`);
     }
   };
 
-  // On mount, load user data from sessionStorage (expires when browser closes)
+  // Load user from sessionStorage
   useEffect(() => {
     const storedUser = sessionStorage.getItem('userData');
     if (storedUser) {
@@ -67,7 +61,7 @@ function App() {
     }
   }, []);
 
-  // Persist user data to sessionStorage whenever it changes
+  // Persist user session
   useEffect(() => {
     if (userData) {
       sessionStorage.setItem('userData', JSON.stringify(userData));
@@ -86,7 +80,6 @@ function App() {
           userData ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            // pass apiFetch so Login can call backend via the correct base
             <Login setUserData={setUserData} apiFetch={apiFetch} />
           )
         }
@@ -128,14 +121,14 @@ function App() {
         }
       />
 
-      {/* <Route
+      <Route
         path="/pending-leaves"
         element={
           <RequireAuth user={userData}>
             <PendingLeaves userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
-      /> */}
+      />
 
       <Route
         path="/apply-loan"
@@ -156,15 +149,6 @@ function App() {
       />
 
       <Route
-        path="/help"
-        element={
-          <RequireAuth user={userData}>
-            <Help userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
-          </RequireAuth>
-        }
-      />
-
-      <Route
         path="/attendance"
         element={
           <RequireAuth user={userData}>
@@ -172,19 +156,15 @@ function App() {
           </RequireAuth>
         }
       />
-      <Route
-  path="/salary-slip"
-  element={
-    <RequireAuth user={userData}>
-      <SalarySlip
-        userData={userData}
-        setUserData={setUserData}
-        apiFetch={apiFetch}
-      />
-    </RequireAuth>
-  }
-/>
 
+      <Route
+        path="/attendance-post"
+        element={
+          <RequireAuth user={userData}>
+            <ManualAttendance userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
+          </RequireAuth>
+        }
+      />
 
       <Route
         path="/profile"
@@ -200,6 +180,15 @@ function App() {
         element={
           <RequireAuth user={userData}>
             <Allowance userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/salary-slip"
+        element={
+          <RequireAuth user={userData}>
+            <SalarySlip userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -231,20 +220,11 @@ function App() {
         }
       />
 
-      {/* <Route
-        path="/loan-report"
-        element={
-          <RequireAuth user={userData}>
-            <LoanReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
-          </RequireAuth>
-        }
-      /> */}
-
       <Route
         path="/fulnfinal-report"
         element={
           <RequireAuth user={userData}>
-            <RAWAttendanceReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
+            <FulNFinalReport userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
           </RequireAuth>
         }
       />
@@ -303,8 +283,17 @@ function App() {
         }
       />
 
-      {/* Redirect unknown routes */}
-      <Route path="*" element={<Navigate to={userData ? "/dashboard" : "/"} replace />} />
+      <Route
+        path="/help"
+        element={
+          <RequireAuth user={userData}>
+            <Help userData={userData} setUserData={setUserData} apiFetch={apiFetch} />
+          </RequireAuth>
+        }
+      />
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to={userData ? '/dashboard' : '/'} replace />} />
     </Routes>
   );
 }

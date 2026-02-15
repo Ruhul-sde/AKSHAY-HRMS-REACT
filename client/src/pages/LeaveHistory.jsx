@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import dayjs from 'dayjs';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Filter, 
@@ -22,7 +20,8 @@ import {
   FileText,
   Sparkles
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Navbar from '../components/Navbar';
+import api from '../api'; // ✅ SAME INSTANCE AS OTHER COMPONENTS
 
 const LeaveHistory = ({ userData, setUserData }) => {
   const [leaveData, setLeaveData] = useState([]);
@@ -33,7 +32,7 @@ const LeaveHistory = ({ userData, setUserData }) => {
     status: 'ALL',
     date: dayjs().format('YYYY-MM-DD')
   });
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+  const [viewMode, setViewMode] = useState('table');
   const [searchTerm, setSearchTerm] = useState('');
 
   const statusOptions = [
@@ -43,6 +42,7 @@ const LeaveHistory = ({ userData, setUserData }) => {
     { value: 'R', label: 'Rejected', icon: XCircle, color: 'red' }
   ];
 
+  /* ======================= FETCH LEAVE HISTORY ======================= */
   const fetchLeaveHistory = async () => {
     if (!userData?.ls_EMPCODE) {
       setError('Employee Code missing.');
@@ -56,22 +56,43 @@ const LeaveHistory = ({ userData, setUserData }) => {
       const formattedDate = dayjs(filters.date).format('YYYYMMDD');
       const checkedValue = filters.checked ? 'Y' : 'N';
       
-      const res = await axios.get(
-        `/api/leave-history`,
-        {
-          params: {
-            ls_EmpCode: userData.ls_EMPCODE,
-            ls_DocDate: formattedDate,
-            ls_Check: checkedValue,
-            ls_Status: filters.status,
-          },
+      console.log('Fetching leave history with params:', {
+        ls_EmpCode: userData.ls_EMPCODE,
+        ls_DocDate: formattedDate,
+        ls_Check: checkedValue,
+        ls_Status: filters.status,
+      });
+
+      const res = await api.get('/leave-history', {
+        params: {
+          ls_EmpCode: userData.ls_EMPCODE,
+          ls_DocDate: formattedDate,
+          ls_Check: checkedValue,
+          ls_Status: filters.status,
         }
-      );
+      });
+
+      console.log('Leave History Response:', res.data);
 
       if (res.data?.success) {
-        const history = res.data.leaveHistory;
+        const history = res.data.leaveHistory || [];
         if (Array.isArray(history) && history.length > 0) {
-          setLeaveData(history);
+          // Process dates if needed - backend already sends formatted data
+          const processedData = history.map(item => ({
+            ...item,
+            // Format dates for display from the backend format
+            formattedFromDate: item.fromDate ? dayjs(item.fromDate, 'DD-MM-YYYY HH:mm:ss').format('DD MMM YYYY') : null,
+            formattedToDate: item.toDate ? dayjs(item.toDate, 'DD-MM-YYYY HH:mm:ss').format('DD MMM YYYY') : null,
+            // For backward compatibility with table view
+            leaveName: item.leaveName,
+            leaveType: item.leaveType,
+            status: item.status,
+            usedLeave: item.noOfDays?.toString() || '0',
+            // Add empty fields that the UI might expect
+            openLeave: '0', // Default since not in response
+            reason: '' // Default since not in response
+          }));
+          setLeaveData(processedData);
         } else {
           setLeaveData([]);
           setError('No leave history found for the selected criteria.');
@@ -80,16 +101,18 @@ const LeaveHistory = ({ userData, setUserData }) => {
         setError(res.data?.message || 'Failed to fetch leave history.');
       }
     } catch (err) {
-      console.error(err);
-      setError('Failed to fetch leave history.');
+      console.error('Error fetching leave history:', err);
+      setError(err.response?.data?.message || 'Failed to fetch leave history.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaveHistory();
-  }, [userData, filters]);
+    if (userData?.ls_EMPCODE) {
+      fetchLeaveHistory();
+    }
+  }, [userData, filters.checked, filters.date, filters.status]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
@@ -148,9 +171,10 @@ const LeaveHistory = ({ userData, setUserData }) => {
       approved: filteredData.filter(item => item.status === 'A').length,
       pending: filteredData.filter(item => item.status === 'P').length,
       rejected: filteredData.filter(item => item.status === 'R').length,
-      totalDays: filteredData.reduce((sum, item) => sum + (parseFloat(item.noOfDays) || 0), 0),
-      approvedDays: filteredData.filter(item => item.status === 'A').reduce((sum, item) => sum + (parseFloat(item.noOfDays) || 0), 0)
+      totalUsed: filteredData.reduce((sum, item) => sum + (parseFloat(item.noOfDays) || 0), 0),
+      totalAvailable: 0, // Not available from this API
     };
+    stats.totalBalance = 0; // Not available from this API
     return stats;
   };
 
@@ -175,6 +199,31 @@ const LeaveHistory = ({ userData, setUserData }) => {
       y: 0,
       transition: { duration: 0.3, ease: "easeOut" }
     }
+  };
+
+  /* ======================= EXPORT TO CSV ======================= */
+  const exportToCSV = () => {
+    if (filteredData.length === 0) return;
+    
+    const headers = ['Leave Type', 'Leave Name', 'Days', 'Status', 'From Date', 'To Date'];
+    const csvRows = [
+      headers.join(','),
+      ...filteredData.map(item => [
+        item.leaveType || '',
+        item.leaveName || '',
+        item.noOfDays || '0',
+        item.status || '',
+        item.fromDate || '',
+        item.toDate || ''
+      ].join(','))
+    ];
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `leave_history_${dayjs().format('DD-MM-YYYY')}.csv`;
+    link.click();
   };
 
   return (
@@ -202,7 +251,17 @@ const LeaveHistory = ({ userData, setUserData }) => {
               </div>
               <div className="mt-4 sm:mt-0 flex gap-2">
                 <motion.button
-                  onClick={() => fetchLeaveHistory()}
+                  onClick={exportToCSV}
+                  disabled={filteredData.length === 0}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all disabled:opacity-50"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </motion.button>
+                <motion.button
+                  onClick={fetchLeaveHistory}
                   disabled={loading}
                   className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all"
                   whileHover={{ scale: 1.05 }}
@@ -216,13 +275,38 @@ const LeaveHistory = ({ userData, setUserData }) => {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Employee Info Card */}
+        {userData && (
+          <motion.div variants={cardVariants} className="mb-8">
+            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-2xl p-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between">
+                <div className="flex items-center gap-3 mb-3 md:mb-0">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h4 className="font-semibold text-gray-800">{userData.ls_EMPNAME || 'Employee'}</h4>
+                    <p className="text-sm text-gray-600">
+                      Code: {userData.ls_EMPCODE} | Department: {userData.ls_Department || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <div className="flex gap-4">
+                    <span>Branch: {userData.ls_BPLNAME || `Branch ${userData.ls_BPLID || '01'}`}</span>
+                    <span>Type: {userData.ls_EMPTYPE || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Stats Cards - Modified to show relevant stats */}
         <motion.div variants={cardVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <StatsCard icon={FileText} label="Total Leaves" value={stats.total} color="blue" />
+          <StatsCard icon={FileText} label="Total Applications" value={stats.total} color="blue" />
           <StatsCard icon={CheckCircle} label="Approved" value={stats.approved} color="green" />
           <StatsCard icon={Clock} label="Pending" value={stats.pending} color="yellow" />
           <StatsCard icon={XCircle} label="Rejected" value={stats.rejected} color="red" />
-          <StatsCard icon={TrendingUp} label="Total Days" value={stats.totalDays.toFixed(1)} color="purple" />
+          <StatsCard icon={TrendingUp} label="Total Days" value={stats.totalUsed.toFixed(1)} color="purple" />
         </motion.div>
 
         {/* Enhanced Filters */}
@@ -246,7 +330,7 @@ const LeaveHistory = ({ userData, setUserData }) => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by leave type, name, or reason..."
+                  placeholder="Search by leave type or name..."
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -360,6 +444,14 @@ const LeaveHistory = ({ userData, setUserData }) => {
                 <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Data</h3>
                 <p className="text-red-600">{error}</p>
+                <motion.button
+                  onClick={fetchLeaveHistory}
+                  className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Try Again
+                </motion.button>
               </motion.div>
             ) : filteredData.length === 0 ? (
               <motion.div 
@@ -415,7 +507,7 @@ const StatsCard = ({ icon: Icon, label, value, color }) => {
   );
 };
 
-// Table View Component
+// Table View Component - Updated to use correct field names
 const TableView = ({ data, filters, getStatusBadge }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
@@ -430,142 +522,119 @@ const TableView = ({ data, filters, getStatusBadge }) => (
               Leave Details
             </th>
             <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
               Days
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Date Range
+            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Status
             </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              From Date
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              To Date
+            </th>
+            {filters.checked && (
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Additional Info
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
-          {data.map((item, i) => {
-            const parseDate = (dateStr) => {
-              if (!dateStr) return null;
-              // Handle DD-MM-YYYY HH:mm:ss format
-              const parts = dateStr.split(' ')[0].split('-');
-              if (parts.length === 3) {
-                return dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
-              }
-              return dayjs(dateStr);
-            };
-
-            const fromDate = parseDate(item.fromDate);
-            const toDate = parseDate(item.toDate);
-
-            return (
-              <motion.tr 
-                key={i} 
-                className="hover:bg-gray-50 transition-colors group"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {item.leaveName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {item.leaveType}
-                    </div>
+          {data.map((item, i) => (
+            <motion.tr 
+              key={i} 
+              className="hover:bg-gray-50 transition-colors group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <td className="px-6 py-4">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {item.leaveName}
                   </div>
-                </td>
-                <td className="px-6 py-4 text-center">
-                  {getStatusBadge(item.status)}
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span className="text-sm font-bold text-gray-900">{item.noOfDays}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">
-                    {fromDate && toDate ? (
-                      <div>
-                        <div>{fromDate.format('DD MMM YYYY')}</div>
-                        {item.fromDate !== item.toDate && (
-                          <div className="text-gray-500">to {toDate.format('DD MMM YYYY')}</div>
-                        )}
-                      </div>
-                    ) : '-'}
+                  <div className="text-sm text-gray-500">
+                    {item.leaveType}
                   </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-center">
+                <span className="text-sm font-medium text-gray-900">{item.noOfDays}</span>
+              </td>
+              <td className="px-6 py-4 text-center">
+                {getStatusBadge(item.status)}
+              </td>
+              <td className="px-6 py-4">
+                <span className="text-sm text-gray-900">
+                  {item.formattedFromDate || item.fromDate}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <span className="text-sm text-gray-900">
+                  {item.formattedToDate || item.toDate}
+                </span>
+              </td>
+              {filters.checked && (
+                <td className="px-6 py-4">
+                  <span className="text-sm text-gray-500">No additional data</span>
                 </td>
-              </motion.tr>
-            );
-          })}
+              )}
+            </motion.tr>
+          ))}
         </tbody>
       </table>
     </div>
   </motion.div>
 );
 
-// Cards View Component
+// Cards View Component - Updated to use correct field names
 const CardsView = ({ data, filters, getStatusBadge }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {data.map((item, i) => {
-      const parseDate = (dateStr) => {
-        if (!dateStr) return null;
-        // Handle DD-MM-YYYY HH:mm:ss format
-        const parts = dateStr.split(' ')[0].split('-');
-        if (parts.length === 3) {
-          return dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        }
-        return dayjs(dateStr);
-      };
-
-      const fromDate = parseDate(item.fromDate);
-      const toDate = parseDate(item.toDate);
-
-      return (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group"
-          whileHover={{ y: -4 }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                {item.leaveName}
-              </h3>
-              <p className="text-sm text-gray-500">{item.leaveType}</p>
-            </div>
-            {item.status && (
-              <div className="ml-3">
-                {getStatusBadge(item.status)}
-              </div>
-            )}
+    {data.map((item, i) => (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: i * 0.05 }}
+        className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 group"
+        whileHover={{ y: -4 }}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+              {item.leaveName}
+            </h3>
+            <p className="text-sm text-gray-500">{item.leaveType}</p>
           </div>
-
-          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl mb-4">
-            <div className="text-sm text-blue-600 font-medium mb-1">Number of Days</div>
-            <div className="text-2xl font-bold text-blue-700">{item.noOfDays}</div>
+          <div className="ml-3">
+            {getStatusBadge(item.status)}
           </div>
+        </div>
 
-          <div className="space-y-2 text-sm">
-            {fromDate && toDate && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">From:</span>
-                <span className="font-medium text-gray-800">
-                  {fromDate.format('DD MMM YYYY')}
-                </span>
-              </div>
-            )}
-            {toDate && item.fromDate !== item.toDate && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">To:</span>
-                <span className="font-medium text-gray-800">
-                  {toDate.format('DD MMM YYYY')}
-                </span>
-              </div>
-            )}
+        <div className="mb-4">
+          <div className="text-center p-3 bg-blue-50 rounded-xl">
+            <div className="text-sm text-blue-600 font-medium">Number of Days</div>
+            <div className="text-lg font-bold text-blue-700">{item.noOfDays}</div>
           </div>
-        </motion.div>
-      );
-    })}
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">From:</span>
+            <span className="font-medium text-gray-800">
+              {item.formattedFromDate || item.fromDate || '-'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">To:</span>
+            <span className="font-medium text-gray-800">
+              {item.formattedToDate || item.toDate || '-'}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    ))}
   </div>
 );
 

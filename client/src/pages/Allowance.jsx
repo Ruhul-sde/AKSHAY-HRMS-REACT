@@ -1,307 +1,477 @@
-
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Coins, Sparkles, Clock, Plus, Trash2, Calendar, DollarSign, FileText, Upload, X, IndianRupee } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import axios from 'axios';
 import dayjs from 'dayjs';
+import {
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  Paperclip,
+  X,
+  Calendar,
+  DollarSign,
+  FileText,
+  ChevronRight,
+  Loader2
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const Allowance = ({ userData, setUserData }) => {
+function AllowanceApply({ userData, setUserData }) {
+  const navigate = useNavigate();
+
   const [allowanceTypes, setAllowanceTypes] = useState([]);
-  const [allowanceEntries, setAllowanceEntries] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYY-MM'));
-  const [loading, setLoading] = useState(false);
+  const [entries, setEntries] = useState([]);
+  const [month, setMonth] = useState(dayjs().format('YYYY-MM'));
+  const [loading, setLoading] = useState({
+    types: true,
+    submit: false
+  });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [selectedEntryIndex, setSelectedEntryIndex] = useState(null);
 
-  // Fetch allowance types on component mount
+  /* ================= AUTH GUARD ================= */
+  useEffect(() => {
+    if (!userData?.ls_EMPCODE) {
+      navigate('/login');
+    }
+  }, [userData, navigate]);
+
+  /* ================= FETCH ALLOWANCE TYPES ================= */
   useEffect(() => {
     fetchAllowanceTypes();
   }, []);
 
   const fetchAllowanceTypes = async () => {
+    setLoading(prev => ({ ...prev, types: true }));
     try {
-      setLoadingTypes(true);
-      const response = await axios.get('/api/allowance-types');
-      if (response.data.success) {
-        setAllowanceTypes(response.data.allowanceTypes);
+      const res = await api.get('/allowance-types');
+      if (res.data.success) {
+        setAllowanceTypes(res.data.allowanceTypes || []);
       } else {
-        setError(response.data.message || 'Failed to fetch allowance types');
+        setError(res.data.message || 'Failed to load allowance types');
       }
     } catch (err) {
-      setError('Failed to load allowance types');
-      console.error('Error fetching allowance types:', err);
+      setError(err.response?.data?.message || 'Failed to load allowance types');
     } finally {
-      setLoadingTypes(false);
+      setLoading(prev => ({ ...prev, types: false }));
     }
   };
 
-  const addNewEntry = () => {
+  /* ================= ENTRY MANAGEMENT ================= */
+  const addEntry = () => {
     const newEntry = {
-      li_LineId: allowanceEntries.length + 1,
-      ls_EMPCODE: userData?.ls_EMPCODE || '',
+      li_LineId: entries.length + 1,
       ls_EXTYPE: '',
       ls_APLYDATE: dayjs().format('YYYYMMDD'),
       ld_AMT: '',
       ls_REMARKS: '',
-      lst_ClsAllowenceFileDtl: []
+      files: []
     };
-    setAllowanceEntries([...allowanceEntries, newEntry]);
+    
+    setEntries(prev => [...prev, newEntry]);
+    setSelectedEntryIndex(entries.length);
   };
 
   const removeEntry = (index) => {
-    const updated = allowanceEntries.filter((_, i) => i !== index);
-    // Update line IDs
-    const reindexed = updated.map((entry, i) => ({
-      ...entry,
-      li_LineId: i + 1
-    }));
-    setAllowanceEntries(reindexed);
+    const updated = entries.filter((_, i) => i !== index);
+    setEntries(updated.map((e, i) => ({ ...e, li_LineId: i + 1 })));
+    setSelectedEntryIndex(null);
   };
 
   const updateEntry = (index, field, value) => {
-    const updated = [...allowanceEntries];
-    updated[index] = { ...updated[index], [field]: value };
-    setAllowanceEntries(updated);
+    const updated = [...entries];
+    updated[index][field] = value;
+    setEntries(updated);
   };
 
-  const addFileToEntry = (entryIndex, file) => {
-    const updated = [...allowanceEntries];
-    const newFile = {
-      file: file, // Store the actual file object
-      ls_FILEPATH: file.name, // Just store the filename for display
-      ls_REMARKS: updated[entryIndex].ls_REMARKS || 'File attachment'
-    };
+  /* ================= FILE HANDLING ================= */
+  const handleFileChange = (entryIndex, e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-    if (!updated[entryIndex].lst_ClsAllowenceFileDtl) {
-      updated[entryIndex].lst_ClsAllowenceFileDtl = [];
-    }
+    const updated = [...entries];
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
 
-    updated[entryIndex].lst_ClsAllowenceFileDtl.push(newFile);
-    setAllowanceEntries(updated);
+    files.forEach(file => {
+      if (file.size > maxSize) {
+        setError(`File "${file.name}" exceeds 10MB limit`);
+        return;
+      }
+
+      updated[entryIndex].files.push({
+        file,
+        fileName: file.name,
+        size: file.size,
+        type: file.type,
+        uploadTime: Date.now()
+      });
+    });
+
+    setEntries(updated);
+    e.target.value = '';
   };
 
-  const removeFileFromEntry = (entryIndex, fileIndex) => {
-    const updated = [...allowanceEntries];
-    updated[entryIndex].lst_ClsAllowenceFileDtl.splice(fileIndex, 1);
-    setAllowanceEntries(updated);
+  const removeFile = (entryIndex, fileIndex) => {
+    const updated = [...entries];
+    updated[entryIndex].files.splice(fileIndex, 1);
+    setEntries(updated);
   };
 
-  const handleSubmit = async () => {
-    if (!allowanceEntries.length) {
+  /* ================= VALIDATION ================= */
+  const validate = () => {
+    if (!entries.length) {
       setError('Please add at least one allowance entry');
-      return;
+      return false;
     }
 
-    // Validate entries
-    for (let i = 0; i < allowanceEntries.length; i++) {
-      const entry = allowanceEntries[i];
-      if (!entry.ls_EXTYPE || !entry.ld_AMT || parseFloat(entry.ld_AMT) <= 0) {
-        setError(`Please fill all required fields for entry ${i + 1}`);
-        return;
+    if (!month) {
+      setError('Please select a month');
+      return false;
+    }
+
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      
+      if (!e.ls_EXTYPE) {
+        setError(`Select allowance type for entry ${i + 1}`);
+        setSelectedEntryIndex(i);
+        return false;
       }
-      if (!entry.ls_APLYDATE) {
-        setError(`Please select a date for entry ${i + 1}`);
-        return;
+      
+      if (!e.ld_AMT || Number(e.ld_AMT) <= 0) {
+        setError(`Enter valid amount for entry ${i + 1}`);
+        setSelectedEntryIndex(i);
+        return false;
+      }
+      
+      if (!e.ls_APLYDATE) {
+        setError(`Select date for entry ${i + 1}`);
+        setSelectedEntryIndex(i);
+        return false;
+      }
+      
+      const selectedDate = dayjs(e.ls_APLYDATE);
+      const today = dayjs();
+      if (selectedDate.isAfter(today)) {
+        setError(`Date cannot be in the future for entry ${i + 1}`);
+        setSelectedEntryIndex(i);
+        return false;
       }
     }
+    
+    return true;
+  };
+
+  /* ================= SUBMIT ALLOWANCE (EXACTLY LIKE LOGIN) ================= */
+  const handleSubmit = async () => {
+    // Clear previous messages
+    setError('');
+    setSuccess('');
+
+    // Validate
+    if (!validate()) return;
+
+    setLoading(prev => ({ ...prev, submit: true }));
 
     try {
-      setLoading(true);
-      setError('');
-      setSuccess('');
-
-      // Create FormData for file uploads
       const formData = new FormData();
 
-      // Convert month format from YYYY-MM to YYYYMM
-      const monthFormatted = selectedMonth.replace('-', '');
-
-      // Add basic form data
-      formData.append('ls_MONTH', monthFormatted);
-
-      // Process entries and add files
-      const processedEntries = allowanceEntries.map((entry, entryIndex) => {
-        const processedEntry = {
-          li_LineId: entry.li_LineId,
-          ls_EMPCODE: entry.ls_EMPCODE || userData?.ls_EMPCODE || '',
-          ls_EXTYPE: entry.ls_EXTYPE,
-          ls_APLYDATE: entry.ls_APLYDATE,
-          ld_AMT: parseFloat(entry.ld_AMT),
-          ls_REMARKS: entry.ls_REMARKS,
-          lst_ClsAllowenceFileDtl: []
+      // Add month (format: YYYYMM)
+      const formattedMonth = month.replace('-', '');
+      formData.append('ls_MONTH', formattedMonth);
+      
+      // Prepare entries - MATCH BACKEND EXPECTATIONS
+      const allowanceDetails = entries.map((e, entryIndex) => {
+        const baseEntry = {
+          li_LineId: e.li_LineId,
+          ls_EmpCode: userData.ls_EMPCODE, // IMPORTANT: Match backend field name
+          ls_EXTYPE: e.ls_EXTYPE,
+          ls_APLYDATE: e.ls_APLYDATE,
+          ld_AMT: Number(e.ld_AMT),
+          ls_REMARKS: e.ls_REMARKS || ''
         };
 
-        // Handle files if they exist
-        if (entry.lst_ClsAllowenceFileDtl && entry.lst_ClsAllowenceFileDtl.length > 0) {
-          entry.lst_ClsAllowenceFileDtl.forEach((fileData, fileIndex) => {
-            if (fileData.file) {
-              // Add file to FormData
-              formData.append(`files_${entryIndex}_${fileIndex}`, fileData.file);
-              // Add file reference to entry
-              processedEntry.lst_ClsAllowenceFileDtl.push({
-                ls_FILEPATH: `files_${entryIndex}_${fileIndex}`, // Reference to FormData key
-                ls_REMARKS: fileData.ls_REMARKS || entry.ls_REMARKS || 'File attachment'
-              });
-            }
+        // If there are files, create file details
+        if (e.files && e.files.length > 0) {
+          const fileDetails = e.files.map((fileObj, fileIndex) => {
+            const fileKey = `file-${e.li_LineId}-${fileIndex}-${fileObj.uploadTime}`;
+            formData.append(fileKey, fileObj.file);
+            
+            return {
+              ls_FILEPATH: fileKey,
+              ls_REMARKS: 'Attachment'
+            };
           });
+          
+          return {
+            ...baseEntry,
+            lst_ClsAllowenceFileDtl: fileDetails
+          };
         } else {
-          // If no files, set to null to match API format
-          processedEntry.lst_ClsAllowenceFileDtl = null;
+          return {
+            ...baseEntry,
+            lst_ClsAllowenceFileDtl: null
+          };
         }
-
-        return processedEntry;
       });
 
-      // Add processed entries to FormData
-      formData.append('lst_ClsAllowenceApplyDtl', JSON.stringify(processedEntries));
+      // Append as JSON string
+      formData.append('lst_ClsAllowenceApplyDtl', JSON.stringify(allowanceDetails));
 
-      console.log('Submitting allowance with files...');
-
-      const response = await axios.post('/api/allowance/allowance-apply', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // API CALL - EXACTLY LIKE LOGIN
+      const res = await api.post('/allowance-apply', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      if (response.data.success) {
-        setSuccess(response.data.message || 'Allowance applied successfully!');
-        setAllowanceEntries([]);
-        // Hide success message after 5 seconds
-        setTimeout(() => setSuccess(''), 5000);
+      // RESPONSE HANDLING - EXACTLY LIKE LOGIN
+      if (res.data.success) {
+        setSuccess(res.data.message || 'Allowance applied successfully');
+        setEntries([]);
+        setSelectedEntryIndex(null);
       } else {
-        setError(response.data.message || 'Allowance application failed - please check your details and try again');
+        setError(res.data.message || 'Allowance application failed');
       }
     } catch (err) {
-      console.error('Allowance submission error:', err);
-      const errorMsg = err.response?.data?.message || err.message || 'An unexpected error occurred during allowance submission.';
-      setError(errorMsg);
+      // ERROR HANDLING - EXACTLY LIKE LOGIN
+      setError(err.response?.data?.message || 'Allowance application failed');
     } finally {
-      setLoading(false);
+      // LOADING HANDLING - EXACTLY LIKE LOGIN
+      setLoading(prev => ({ ...prev, submit: false }));
     }
   };
 
-  if (loadingTypes) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
-        <Navbar setUserData={setUserData} userData={userData} />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading allowance types...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  /* ================= FORMAT FILE SIZE ================= */
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  /* ================= FORMAT DATE FOR DISPLAY ================= */
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    const year = dateString.substring(0, 4);
+    const month = dateString.substring(4, 6);
+    const day = dateString.substring(6, 8);
+    return `${year}-${month}-${day}`;
+  };
+
+  /* ================= ANIMATION VARIANTS ================= */
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100
+      }
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <Navbar setUserData={setUserData} userData={userData} />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <Coins className="w-12 h-12 text-white" />
-            </motion.div>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-6xl mx-auto px-4 py-8"
+      >
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 text-center">
+            Allowance Application
+          </h1>
+          <p className="text-gray-600 text-center mt-2">
+            Submit your monthly allowance claims with supporting documents
+          </p>
+        </div>
 
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Allowance Management</h1>
-            <p className="text-gray-600 text-lg">Apply for meal allowance, travel allowance, and other reimbursements</p>
-          </div>
-
-          {/* Error/Success Messages */}
+        {/* Status Messages */}
+        <AnimatePresence>
           {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-              {error}
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-red-500 mt-0.5" size={20} />
+                <div className="flex-1">
+                  <p className="text-red-700 font-medium">{error}</p>
+                  {selectedEntryIndex !== null && (
+                    <p className="text-red-600 text-sm mt-1">
+                      Please check entry #{selectedEntryIndex + 1}
+                    </p>
+                  )}
+                </div>
+                <button 
+                  onClick={() => setError('')}
+                  className="text-red-500 hover:text-red-700 flex-shrink-0"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </motion.div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-100 border border-green-300 text-green-700 rounded-lg">
-              {success}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-green-500" size={20} />
+                  <p className="text-green-700 font-medium">{success}</p>
+                </div>
+                <button 
+                  onClick={() => setSuccess('')}
+                  className="text-green-500 hover:text-green-700"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Form */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100"
+        >
+          {/* Month Selection */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} />
+                Select Month *
+              </div>
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="border border-gray-300 rounded-xl px-4 py-3 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                required
+              />
+              <div className="text-sm text-gray-500">
+                {dayjs(month).format('MMMM YYYY')}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Allowance Types Loading */}
+          {loading.types && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Loader2 className="animate-spin text-blue-500 mr-3" />
+              <span className="text-blue-700">Loading allowance types...</span>
             </div>
           )}
 
-          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-            {/* Month Selection */}
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Select Month
-              </label>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full md:w-auto px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+          {/* Entries Section */}
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Allowance Entries</h2>
+                <p className="text-gray-600 text-sm">Add all your allowance claims for the month</p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={addEntry}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-blue-200 transition-shadow"
+              >
+                <Plus size={18} />
+                Add Entry
+              </motion.button>
             </div>
 
-            {/* Allowance Entries */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800">Allowance Entries</h2>
-                <button
-                  onClick={addNewEntry}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Entry
-                </button>
-              </div>
-
-              {allowanceEntries.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Coins className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>No allowance entries added yet. Click "Add Entry" to start.</p>
-                </div>
-              ) : (
-                allowanceEntries.map((entry, index) => (
+            {entries.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl"
+              >
+                <FileText className="mx-auto text-gray-300 mb-4" size={48} />
+                <h3 className="text-lg font-semibold text-gray-500 mb-2">
+                  No allowance entries added
+                </h3>
+                <p className="text-gray-400 mb-4">
+                  Click "Add Entry" to start adding your allowance claims
+                </p>
+              </motion.div>
+            ) : (
+              <div className="space-y-6">
+                {entries.map((entry, index) => (
                   <motion.div
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-50 rounded-xl p-6 border border-gray-200"
+                    variants={itemVariants}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={`border rounded-2xl p-6 transition-all ${
+                      selectedEntryIndex === index 
+                        ? 'border-blue-300 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                   >
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">Entry {index + 1}</h3>
-                      <button
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
+                          {index + 1}
+                        </div>
+                        <h3 className="font-semibold text-gray-800">Entry #{index + 1}</h3>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => removeEntry(index)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
                       >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                        <Trash2 size={18} />
+                      </motion.button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                       {/* Allowance Type */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Allowance Type *
                         </label>
                         <select
                           value={entry.ls_EXTYPE}
                           onChange={(e) => updateEntry(index, 'ls_EXTYPE', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                           required
                         >
                           <option value="">Select Type</option>
                           {allowanceTypes.map(type => (
                             <option key={type.code} value={type.code}>
-                              {type.name} ({type.code})
+                              {type.name}
                             </option>
                           ))}
                         </select>
@@ -309,118 +479,163 @@ const Allowance = ({ userData, setUserData }) => {
 
                       {/* Date */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Date *
                         </label>
-                        <input
-                          type="date"
-                          value={dayjs(entry.ls_APLYDATE, 'YYYYMMDD').format('YYYY-MM-DD')}
-                          onChange={(e) => updateEntry(index, 'ls_APLYDATE', dayjs(e.target.value).format('YYYYMMDD'))}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          required
-                        />
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                          <input
+                            type="date"
+                            value={formatDateForDisplay(entry.ls_APLYDATE)}
+                            onChange={(e) =>
+                              updateEntry(index, 'ls_APLYDATE', dayjs(e.target.value).format('YYYYMMDD'))
+                            }
+                            max={dayjs().format('YYYY-MM-DD')}
+                            className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            required
+                          />
+                        </div>
                       </div>
 
                       {/* Amount */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <IndianRupee className="w-4 h-4 inline mr-1" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Amount *
                         </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={entry.ld_AMT}
-                          onChange={(e) => updateEntry(index, 'ld_AMT', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Enter amount"
-                          required
-                        />
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            value={entry.ld_AMT}
+                            onChange={(e) => updateEntry(index, 'ld_AMT', e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            required
+                          />
+                        </div>
                       </div>
 
                       {/* Remarks */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <FileText className="w-4 h-4 inline mr-1" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Remarks
                         </label>
                         <input
                           type="text"
+                          placeholder="Optional remarks..."
                           value={entry.ls_REMARKS}
                           onChange={(e) => updateEntry(index, 'ls_REMARKS', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Enter remarks"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         />
                       </div>
                     </div>
 
                     {/* File Upload */}
-                    <div className="mb-4">
+                    <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <Upload className="w-4 h-4 inline mr-1" />
-                        Attachments
+                        Supporting Documents (Optional)
                       </label>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => {
-                          Array.from(e.target.files).forEach(file => {
-                            addFileToEntry(index, file);
-                          });
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                      />
-                    </div>
-
-                    {/* File List */}
-                    {entry.lst_ClsAllowenceFileDtl && entry.lst_ClsAllowenceFileDtl.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Attached Files:</h4>
-                        {entry.lst_ClsAllowenceFileDtl.map((file, fileIndex) => (
-                          <div key={fileIndex} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                            <span className="text-sm text-gray-600">{file.file ? file.file.name : file.ls_FILEPATH}</span>
-                            <button
-                              onClick={() => removeFileFromEntry(index, fileIndex)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                      <div className="flex items-center gap-4 mb-3">
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            multiple
+                            onChange={(e) => handleFileChange(index, e)}
+                            className="hidden"
+                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                          />
+                          <div className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center gap-2">
+                            <Paperclip size={16} />
+                            <span className="text-sm font-medium">Choose Files</span>
                           </div>
-                        ))}
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          Max 10MB per file (JPG, PNG, PDF, DOC, DOCX)
+                        </span>
                       </div>
-                    )}
-                  </motion.div>
-                ))
-              )}
-            </div>
 
-            {/* Submit Button */}
-            {allowanceEntries.length > 0 && (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Submitting...
+                      {/* File List */}
+                      {entry.files.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          {entry.files.map((file, fileIndex) => (
+                            <motion.div
+                              key={fileIndex}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="flex items-center justify-between bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Paperclip size={16} className="text-gray-400" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">
+                                    {file.fileName}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {formatFileSize(file.size)} • {file.type}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeFile(index, fileIndex)}
+                                className="p-1 hover:bg-red-100 rounded transition"
+                                type="button"
+                              >
+                                <X size={16} className="text-gray-400 hover:text-red-500" />
+                              </button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    'Submit Allowance Application'
-                  )}
-                </button>
+                  </motion.div>
+                ))}
               </div>
             )}
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
 
-      <Footer />
+          {/* Submit Button */}
+          {entries.length > 0 && (
+            <motion.div
+              variants={itemVariants}
+              className="pt-6 border-t border-gray-100"
+            >
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    Total Entries: <span className="font-bold">{entries.length}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Please review all entries before submitting
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSubmit}
+                  disabled={loading.submit}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-3.5 rounded-xl font-semibold flex items-center gap-3 shadow-lg hover:shadow-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading.submit ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      Submit Allowance
+                      <ChevronRight size={18} />
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      </motion.div>
     </div>
   );
-};
+}
 
-export default Allowance;
+export default AllowanceApply;

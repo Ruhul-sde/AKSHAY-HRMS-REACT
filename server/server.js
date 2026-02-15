@@ -1,11 +1,24 @@
 // server.js
 require('dotenv').config(); // load .env first
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
-const authRouter = require('./routes/auth');
+
+// Import route modules with updated paths
+const loginRoutes = require('./routes/auth/login');
+const passwordRoutes = require('./routes/auth/password');
+const employeeImageRoutes = require('./routes/employee/image');
+const leaveTypeRoutes = require('./routes/leave/leavetype');
+const leaveApplyRoutes = require('./routes/leave/leaveapply');
+const leaveHistoryRoutes = require('./routes/leave/leavehistory');
+const pendingLeaveRoutes = require('./routes/leave/pendingleave');
+const attendanceRoutes = require('./routes/attendance/attendance');
+const outdutyRoutes = require('./routes/attendance/outduty');
+const monthlyAttendanceRoutes = require('./routes/reports/monthly-attendance');
+const loanRoutes = require('./routes/payroll/loan');
+const allowanceRoutes = require('./routes/payroll/allowance');
+const salarySlipRoutes = require('./routes/payroll/salaryslip');
+const holidayRoutes = require('./routes/holiday/holiday');
 
 console.log('Loaded ENV (sample):', {
   NODE_ENV: process.env.NODE_ENV,
@@ -15,7 +28,7 @@ console.log('Loaded ENV (sample):', {
 });
 
 const app = express();
-const PORT = Number(process.env.PORT) || 5001;
+const PORT = Number(process.env.PORT);
 
 // Allowed origins - include your frontend public IP (change if different)
 const allowedOrigins = [
@@ -69,8 +82,21 @@ app.get('/', (req, res) => {
   res.send(`✅ Backend server is running on port ${PORT}`);
 });
 
-// API routes
-app.use('/api', authRouter);
+// API routes - Mount all routes individually
+app.use('/api', loginRoutes);
+app.use('/api', passwordRoutes);
+app.use('/api', employeeImageRoutes);
+app.use('/api', leaveTypeRoutes);
+app.use('/api', leaveApplyRoutes);
+app.use('/api', leaveHistoryRoutes);
+app.use('/api', pendingLeaveRoutes);
+app.use('/api', attendanceRoutes);
+app.use('/api', outdutyRoutes);
+app.use('/api', monthlyAttendanceRoutes);
+app.use('/api', loanRoutes);
+app.use('/api', allowanceRoutes);
+app.use('/api', salarySlipRoutes);
+app.use('/api', holidayRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -89,4 +115,23 @@ app.listen(PORT, HOST, () => {
   console.log(`🌐 Accessible (public) on: http://${process.env.PUBLIC_IP || '49.249.199.62'}:${PORT}`);
   console.log(`🎯 Client URL(s) allowed:`, allowedOrigins);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // List all loaded routes
+  console.log('\n📁 Loaded API Routes:');
+  console.log('├── POST /api/login');
+  console.log('├── POST /api/change-password');
+  console.log('├── GET  /api/employee-image');
+  console.log('├── GET  /api/leave-types');
+  console.log('├── POST /api/apply-leave');
+  console.log('├── GET  /api/leave-history');
+  console.log('├── GET  /api/pending-leave');
+  console.log('├── GET  /api/attendance');
+  console.log('├── POST /api/out-duty');
+  console.log('├── GET  /api/monthly-attendance');
+  console.log('├── GET  /api/allowance-types');
+  console.log('├── POST /api/allowance-apply');
+  console.log('├── GET  /api/loan-types');
+  console.log('├── POST /api/apply-loan');
+  console.log('├── GET  /api/holiday-report');
+  console.log('└── POST /api/salary-slip/*');
 });

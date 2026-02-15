@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import dayjs from 'dayjs';
 import { 
@@ -18,6 +17,7 @@ import {
   Info
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import api from '../api'; // ✅ SAME INSTANCE AS REPORTS
 
 const LeaveApply = ({ userData, setUserData }) => {
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -36,39 +36,47 @@ const LeaveApply = ({ userData, setUserData }) => {
   const [success, setSuccess] = useState('');
   const [loadingLeaveTypes, setLoadingLeaveTypes] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
 
+  /* ======================= FETCH LEAVE TYPES ======================= */
   useEffect(() => {
     const fetchLeaveTypes = async () => {
-      if (!userData?.ls_EMPTYPE) {
-        setError('Employee type not available.');
+      if (!userData?.ls_EMPCODE) {
+        setError('Employee data not available.');
         setLoadingLeaveTypes(false);
         return;
       }
       
-      // Use BPLID if available, otherwise use a default value
-      const bplId = userData?.ls_BrnchId || '01';
-      
+      setLoadingLeaveTypes(true);
       try {
-        const res = await axios.get(`/api/leave-types?empType=${userData.ls_EMPTYPE}&bplId=${bplId}`);
+        // Updated to match backend API parameters
+        const res = await api.get('/leave-types', {
+          params: {
+            empType: userData.ls_EMPTYPE,
+            bplId: userData.ls_BPLID || '01' // Default to '01' if not available
+          }
+        });
+
+        console.log('Leave Types Response:', res.data);
+
         if (res.data?.success) {
-          setLeaveTypes(res.data.leaveTypes);
-          setError(''); // Clear any previous errors
+          setLeaveTypes(res.data.leaveTypes || []);
         } else {
-          setError(res.data.message || 'No leave types found.');
+          setError(res.data?.message || 'No leave types found.');
         }
       } catch (err) {
-        console.error('Leave types fetch error:', err);
+        console.error('Error fetching leave types:', err);
         setError(err.response?.data?.message || 'Failed to load leave types.');
       } finally {
         setLoadingLeaveTypes(false);
       }
     };
-    fetchLeaveTypes();
+    
+    if (userData?.ls_EMPTYPE) {
+      fetchLeaveTypes();
+    }
   }, [userData]);
 
-  const formatDate = (date) => dayjs(date).format('YYYYMMDD');
-
+  /* ======================= HANDLE FORM CHANGES ======================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     let updated = { ...form, [name]: value };
@@ -125,6 +133,7 @@ const LeaveApply = ({ userData, setUserData }) => {
     setForm(updated);
   };
 
+  /* ======================= VALIDATE FORM ======================= */
   const validateForm = () => {
     if (!form.leaveType) {
       setError('Please select a leave type');
@@ -154,21 +163,19 @@ const LeaveApply = ({ userData, setUserData }) => {
     return true;
   };
 
+  /* ======================= SUBMIT LEAVE APPLICATION ======================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+
     try {
-      let fromTime = '';
-      let toTime = '';
+      let finalFromDate, finalToDate, finalFromTime = '', finalToTime = '';
 
-      if (form.dayType === 'halfDay') {
-        fromTime = form.fromTime;
-        toTime = form.toTime;
-      }
-
-      let finalFromDate, finalToDate;
+      // Format dates and times based on leave type
       if (form.dayType === 'multiDay') {
         finalFromDate = form.fromDate;
         finalToDate = form.toDate;
@@ -177,18 +184,45 @@ const LeaveApply = ({ userData, setUserData }) => {
         finalToDate = form.date;
       }
 
-      const res = await axios.post('http://localhost:5000/api/apply-leave', {
-        ls_EmpCode: userData.ls_EMPCODE.toString(),
-        ls_FromDate: formatDate(finalFromDate),
-        ls_ToDate: formatDate(finalToDate),
-        ls_DocDate: formatDate(dayjs()),
+      if (form.dayType === 'halfDay') {
+        finalFromTime = form.fromTime;
+        finalToTime = form.toTime;
+      }
+
+      // Format dates to YYYYMMDD for API
+      const formattedFromDate = dayjs(finalFromDate).format('YYYYMMDD');
+      const formattedToDate = dayjs(finalToDate).format('YYYYMMDD');
+      const formattedDocDate = dayjs().format('YYYYMMDD');
+
+      console.log('Submitting leave application:', {
+        ls_EmpCode: userData.ls_EMPCODE,
+        ls_FromDate: formattedFromDate,
+        ls_ToDate: formattedToDate,
+        ls_DocDate: formattedDocDate,
         ls_NofDays: form.numDays.toString(),
-        ls_FromTime: form.dayType === 'halfDay' ? fromTime : '',
-        ls_ToTime: form.dayType === 'halfDay' ? toTime : '',
+        ls_FromTime: finalFromTime,
+        ls_ToTime: finalToTime,
         ls_LeavTyp: form.leaveType,
         ls_Reason: form.reason,
-        ls_GrpNo: '5'
+        ls_GrpNo: '5',
+        ls_BPLID: userData.ls_BPLID || '01' // Include branch ID
       });
+
+      const res = await api.post('/apply-leave', {
+        ls_EmpCode: userData.ls_EMPCODE,
+        ls_FromDate: formattedFromDate,
+        ls_ToDate: formattedToDate,
+        ls_DocDate: formattedDocDate,
+        ls_NofDays: form.numDays.toString(),
+        ls_FromTime: finalFromTime,
+        ls_ToTime: finalToTime,
+        ls_LeavTyp: form.leaveType,
+        ls_Reason: form.reason,
+        ls_GrpNo: '5',
+        ls_BPLID: userData.ls_BPLID || '01'
+      });
+
+      console.log('Leave Application Response:', res.data);
 
       if (res.data?.success) {
         setSuccess(res.data.message || 'Leave applied successfully');
@@ -207,6 +241,7 @@ const LeaveApply = ({ userData, setUserData }) => {
         setError(res.data?.message || 'Application failed. Please try again.');
       }
     } catch (err) {
+      console.error('Error submitting leave application:', err);
       if (err.response) {
         setError(err.response.data?.message || 'Server error occurred');
       } else if (err.request) {
@@ -234,6 +269,14 @@ const LeaveApply = ({ userData, setUserData }) => {
     return 1;
   };
 
+  // Get user's branch name for display
+  const getBranchName = () => {
+    if (userData?.ls_BPLNAME) {
+      return userData.ls_BPLNAME;
+    }
+    return userData?.ls_BPLID === '01' ? 'KANJURMARG-HO' : `Branch ${userData?.ls_BPLID || '01'}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar setUserData={setUserData} userData={userData} />
@@ -250,6 +293,12 @@ const LeaveApply = ({ userData, setUserData }) => {
                 Apply for Leave
               </h1>
               <p className="text-gray-600 mt-1">Submit your time-off request with ease</p>
+              {userData?.ls_BPLID && (
+                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                  <Info className="w-3 h-3" />
+                  {getBranchName()}
+                </div>
+              )}
             </div>
           </div>
           
@@ -313,6 +362,23 @@ const LeaveApply = ({ userData, setUserData }) => {
           )}
         </AnimatePresence>
 
+        {/* Employee Info Card */}
+        <div className="mb-6 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <User className="w-5 h-5 text-blue-600" />
+              <div>
+                <h4 className="font-semibold text-gray-800">{userData?.ls_EMPNAME || 'Employee'}</h4>
+                <p className="text-sm text-gray-600">Code: {userData?.ls_EMPCODE || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Department</p>
+              <p className="font-medium text-gray-800">{userData?.ls_Department || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+
         {/* Main Form Card */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
@@ -340,9 +406,9 @@ const LeaveApply = ({ userData, setUserData }) => {
                   <option value="">
                     {loadingLeaveTypes ? 'Loading leave types...' : 'Select Leave Type'}
                   </option>
-                  {leaveTypes.map(type => (
-                    <option key={type.code} value={type.code}>
-                      {type.name} ({type.code})
+                  {leaveTypes.map((type, index) => (
+                    <option key={index} value={type.code}>
+                      {type.name} {type.description ? `(${type.description})` : ''}
                     </option>
                   ))}
                 </select>
@@ -350,6 +416,16 @@ const LeaveApply = ({ userData, setUserData }) => {
                   <ArrowRight className="w-5 h-5 text-gray-400 rotate-90" />
                 </div>
               </div>
+              
+              {/* Leave Types Info */}
+              {leaveTypes.length === 0 && !loadingLeaveTypes && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <p className="text-sm text-yellow-700">
+                    No leave types available for your employee type ({userData?.ls_EMPTYPE || 'N/A'}) and branch ({getBranchName()}).
+                    Please contact HR.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Step 2: Duration Type Selection */}
@@ -534,6 +610,7 @@ const LeaveApply = ({ userData, setUserData }) => {
                         min={today}
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -548,6 +625,7 @@ const LeaveApply = ({ userData, setUserData }) => {
                         min={form.fromDate || today}
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
                   </div>
@@ -564,6 +642,7 @@ const LeaveApply = ({ userData, setUserData }) => {
                       min={today}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                 )}
@@ -639,6 +718,7 @@ const LeaveApply = ({ userData, setUserData }) => {
                   onChange={handleChange}
                   rows="4"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-200 resize-none"
+                  disabled={isSubmitting}
                 />
               </div>
             )}

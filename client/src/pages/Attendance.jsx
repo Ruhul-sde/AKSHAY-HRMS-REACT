@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  Clock,
   Navigation,
   Users,
   MapPin,
@@ -15,7 +13,6 @@ import {
   Loader,
   AlertCircle,
   Calendar,
-  Filter,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -27,7 +24,6 @@ import api from '../api';
 
 const Attendance = ({ userData, setUserData }) => {
   const navigate = useNavigate();
-  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [outDutyHistory, setOutDutyHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -128,20 +124,20 @@ const Attendance = ({ userData, setUserData }) => {
           animate="visible"
           className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
         >
-          {/* Attendance Option */}
+          {/* Manual Attendance Entry Option */}
           <motion.div
             variants={cardVariants}
             className="group bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 cursor-pointer"
             whileHover={{ y: -4, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setIsAttendanceModalOpen(true)}
+            onClick={() => navigate('/attendance-post')}
           >
             <div className="flex flex-col items-center text-center">
-              <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full mb-4 group-hover:from-green-200 group-hover:to-emerald-200 transition-colors">
-                <Clock className="w-8 h-8 text-green-600" />
+              <div className="p-4 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-full mb-4 group-hover:from-orange-200 group-hover:to-yellow-200 transition-colors">
+                <FileText className="w-8 h-8 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Attendance</h3>
-              <p className="text-gray-600">Mark your daily attendance</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Manual Attendance</h3>
+              <p className="text-gray-600">Post or update punch miss records</p>
             </div>
           </motion.div>
 
@@ -231,7 +227,7 @@ const Attendance = ({ userData, setUserData }) => {
                           {record.ls_Type === 'I' ? (
                             <CheckCircle className="w-4 h-4 text-green-600" />
                           ) : (
-                            <Clock className="w-4 h-4 text-orange-600" />
+                            <FileText className="w-4 h-4 text-orange-600" />
                           )}
                         </div>
                         <div>
@@ -348,55 +344,6 @@ const Attendance = ({ userData, setUserData }) => {
             </div>
           )}
         </motion.div>
-
-        {/* Attendance Modal */}
-        <AnimatePresence>
-          {isAttendanceModalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-              onClick={(e) => e.target === e.currentTarget && setIsAttendanceModalOpen(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Clock className="w-6 h-6 text-green-600" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-800">Attendance</h2>
-                  </div>
-                  <button
-                    onClick={() => setIsAttendanceModalOpen(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-
-                <div className="text-center py-8">
-                  <div className="p-4 bg-blue-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                    <Clock className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Coming Soon!</h3>
-                  <p className="text-gray-600 mb-6">Attendance system will appear soon.</p>
-                  <button
-                    onClick={() => setIsAttendanceModalOpen(false)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Got it
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
       <Footer />
     </div>

@@ -100,7 +100,7 @@ const Profile = ({ userData, setUserData }) => {
 
   const getProfilePicture = () => {
     if (userData?.ls_EMPCODE) {
-      return `http://localhost:5000/api/employee-image?imagePath=${userData.ls_Picture || `/path/to/images/${userData.ls_EMPCODE}.jpg`}`;
+      return `/employee-image?imagePath=${userData.ls_Picture || `/path/to/images/${userData.ls_EMPCODE}.jpg`}`;
     }
     return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face";
   };

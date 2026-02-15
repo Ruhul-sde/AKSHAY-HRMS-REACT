@@ -9,7 +9,7 @@ const outdutyRoutes = require('./outduty');
 const holidayRoutes = require('./holiday');
 const allowanceRoutes = require('./allowance');
 const pendingLeaveRoutes = require('./pendingLeave');
-const salarySlipRoutes = require('./salarySlip'); // ✅ ADD THIS
+const salarySlipRoutes = require('./salarySlip');
 
 const router = express.Router();
 
@@ -24,6 +24,6 @@ router.use('/', loanRoutes);
 router.use('/', outdutyRoutes);
 router.use('/', holidayRoutes);
 router.use('/', allowanceRoutes);
-router.use('/', salarySlipRoutes); // ✅ ADD THIS
+router.use('/', salarySlipRoutes);
 
 module.exports = router;
